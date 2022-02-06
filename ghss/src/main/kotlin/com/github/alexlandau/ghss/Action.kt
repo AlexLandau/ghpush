@@ -2,6 +2,10 @@ package com.github.alexlandau.ghss
 
 sealed class ActionPlan {
     /**
+     * Indicates all current commits have been pushed already.
+     */
+    object NothingToPush: ActionPlan()
+    /**
      * Indicates all commits have incorporated any upstream updates and have gh-branch names chosen.
      */
     object ReadyToPush: ActionPlan()
@@ -26,5 +30,10 @@ fun getActionToTake(diagnosis: Diagnosis): ActionPlan {
             return ActionPlan.AddBranchNames
         }
     }
-    return ActionPlan.ReadyToPush
+    for (commit in diagnosis.commits) {
+        if (commit.remoteHash != commit.fullHash) {
+            return ActionPlan.ReadyToPush
+        }
+    }
+    return ActionPlan.NothingToPush
 }

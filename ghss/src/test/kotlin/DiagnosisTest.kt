@@ -1,7 +1,4 @@
-import com.github.alexlandau.ghss.CommitDiagnosis
-import com.github.alexlandau.ghss.Diagnosis
-import com.github.alexlandau.ghss.getCommandOutput
-import com.github.alexlandau.ghss.getDiagnosis
+import com.github.alexlandau.ghss.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -13,6 +10,7 @@ class DiagnosisTest {
 
         val diagnosis = getDiagnosis(gitPaths.localRepo)
         assertEquals(Diagnosis(listOf()), diagnosis)
+        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis))
 
         gitPaths.deleteTempDirs()
     }
@@ -39,6 +37,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
+        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis))
 
         gitPath.deleteTempDirs()
     }
@@ -91,6 +90,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
+        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis))
 
         gitPath.deleteTempDirs()
     }
@@ -117,6 +117,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
+        assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis))
 
         gitPath.deleteTempDirs()
     }
@@ -145,6 +146,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
+        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis))
 
         gitPath.deleteTempDirs()
     }
