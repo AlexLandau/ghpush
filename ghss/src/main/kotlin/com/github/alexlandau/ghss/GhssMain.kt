@@ -1,6 +1,7 @@
 package com.github.alexlandau.ghss
 
 import java.io.File
+import java.util.*
 
 fun main() {
     try {
@@ -19,6 +20,8 @@ fun main() {
     }
 }
 
+// TODO: Check that nothing is staged before starting
+// TODO: Learn about .git/sequencer, maybe I can use that for something cool?
 fun runGhss(repoDir: File) {
     println("(1/4) Checking preconditions...")
     // TODO: Specially handle the cases where these aren't installed
@@ -42,13 +45,77 @@ fun runGhss(repoDir: File) {
     val diagnosis = getDiagnosis(repoDir)
     val actionPlan = getActionToTake(diagnosis)
 
-    when (actionPlan) {
+    val unused: Unit = when (actionPlan) {
         ActionPlan.AddBranchNames -> println("Evaluation: Some commits lack branch names")
         ActionPlan.ReadyToPush -> println("Evaluation: We are ready to push changes")
         is ActionPlan.ReconcileCommits -> println("Evaluation: Some commits need to be reconciled")
+        ActionPlan.NothingToPush -> println("Evaluation: The remote branches are up-to-date")
     }
 
     // TODO: Actually carry out the relevant actions
+    if (actionPlan == ActionPlan.AddBranchNames) {
+        addBranchNames(diagnosis, repoDir)
+    }
+}
+
+fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
+    // The key is the full hash from the diagnosis
+    val branchNamesToAdd = HashMap<String, String>()
+    for (commit in diagnosis.commits) {
+        if (commit.ghBranchTag == null) {
+            while (true) {
+                println("For commit ${commit.shortHash} '${commit.title}',")
+                print("  choose a branch name (or a/x/?): ")
+                System.out.flush()
+                val input = readLine()
+                if (input == null) {
+                    throw GhssException(
+                        "Error: Looked for an input from the standard input and couldn't get " +
+                                "anything. This may happen if you're piping input from a script and the end of the " +
+                                "file has been reached."
+                    )
+                }
+                println("The input was: $input") // (debug)
+                // TODO: Check for invalid characters
+                if (input == "?") {
+                    println("Special commands are:")
+                    println("  a - Autogenerate a branch name from the commit title")
+                    println("  x - Exit the CLI without making changes")
+                    println("  ? - Display this help message")
+                } else if (input == "a") {
+                    TODO()
+                } else if (input == "x") {
+                    return
+                } else if (input == "") {
+                    println("  Please enter a branch name (or use 'x' to abort and exit)")
+                    continue
+                } else {
+                    branchNamesToAdd.put(commit.fullHash, input)
+                    break
+                }
+            }
+        }
+    }
+
+    println("Branch names to add are: $branchNamesToAdd")
+    println("Rewriting the branch to add gh-branch to commit messages...")
+    // Find the first commit on this list, check out <that commit>~1
+    val fullHashesToRewrite = diagnosis.commits.map { it.fullHash }
+        .dropWhile { !branchNamesToAdd.containsKey(it) }
+    getCommandOutput(listOf("git", "checkout", "${fullHashesToRewrite[0]}~1"), repoDir)
+    for (hashToRewrite in fullHashesToRewrite) {
+        getCommandOutput(listOf("git", "cherry-pick", hashToRewrite), repoDir)
+        if (branchNamesToAdd.containsKey(hashToRewrite)) {
+            println("Should rewrite the hash here...")
+            // TODO: Maybe check command-line size limits here?
+            // If running into limits, can use -F to read from a file or standard input
+            // %B?
+            val commitMessage = getCommandOutput(listOf("git", "log", "-n", "1", "--format=format:%B"), repoDir)
+            val editedMessage = "${commitMessage.trim()}\n\ngh-branch: ${branchNamesToAdd[hashToRewrite]!!}"
+            getCommandOutput(listOf("git", "commit", "--amend", "-m", editedMessage), repoDir)
+        }
+    }
+    // TODO: Move the original branch name over (if we had a branch checked out)
 }
 
 internal fun getGitOrigin(repoPath: File): String {
