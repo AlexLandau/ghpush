@@ -98,6 +98,8 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
     }
 
     println("Branch names to add are: $branchNamesToAdd")
+    val originalBranch = getCommandOutput(listOf("git", "branch", "--show-current"), repoDir).trim()
+    println("Current branch is: $originalBranch")
     println("Rewriting the branch to add gh-branch to commit messages...")
     // Find the first commit on this list, check out <that commit>~1
     val fullHashesToRewrite = diagnosis.commits.map { it.fullHash }
@@ -115,7 +117,10 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
             getCommandOutput(listOf("git", "commit", "--amend", "-m", editedMessage), repoDir)
         }
     }
-    // TODO: Move the original branch name over (if we had a branch checked out)
+    // Move the original branch name over to the new commit sequence
+    if (originalBranch.isNotEmpty()) {
+        getCommandOutput(listOf("git", "checkout", "-B", originalBranch), repoDir)
+    }
 }
 
 internal fun getGitOrigin(repoPath: File): String {
