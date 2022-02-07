@@ -1,6 +1,7 @@
 package com.github.alexlandau.ghss
 
 import java.io.File
+import java.nio.charset.StandardCharsets
 import java.util.*
 
 fun main() {
@@ -83,7 +84,10 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
                     println("  x - Exit the CLI without making changes")
                     println("  ? - Display this help message")
                 } else if (input == "a") {
-                    TODO()
+                    val branchName = autogenerateBranchName(commit.title, repoDir)
+                    println("  The branch name is: $branchName")
+                    branchNamesToAdd.put(commit.fullHash, branchName)
+                    break
                 } else if (input == "x") {
                     return
                 } else if (input == "") {
@@ -120,6 +124,53 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
     // Move the original branch name over to the new commit sequence
     if (originalBranch.isNotEmpty()) {
         getCommandOutput(listOf("git", "checkout", "-B", originalBranch), repoDir)
+    }
+}
+
+private fun autogenerateBranchName(commitTitle: String, repoDir: File): String {
+    return autogenerateBranchName(commitTitle, { branchName ->
+        // Check if the remote has a branch with this name
+        val output = getCommandOutput(listOf("git", "branch", "--list", "-r", "origin/$branchName"), repoDir)
+        !output.isBlank()
+    })
+}
+internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (String) -> Boolean): String {
+    val withHyphensArray = commitTitle.codePoints().map { codePoint ->
+        if (!Character.isLetterOrDigit(codePoint)) {
+            '-'.code
+        } else {
+            Character.toLowerCase(codePoint)
+        }
+    }.toArray()
+    val withHyphens = String(withHyphensArray, 0, withHyphensArray.size)
+    val sb = StringBuilder()
+    var lastCharWasAHyphen = true
+    for (c in withHyphens) {
+        if (c == '-') {
+            if (!lastCharWasAHyphen) {
+                sb.append(c)
+            }
+            lastCharWasAHyphen = true
+        } else {
+            sb.append(c)
+            lastCharWasAHyphen = false
+        }
+    }
+    val initialBranchName = sb.toString().take(40).removeSuffix("-")
+    if (!isBranchNameTaken(initialBranchName)) {
+        return initialBranchName
+    }
+    var suffixNum = 2
+    while (true) {
+        val candidateName = "$initialBranchName-$suffixNum"
+        if (!isBranchNameTaken(candidateName)) {
+            return candidateName
+        }
+        suffixNum++
+        if (suffixNum >= 100) {
+            throw GhssException("There are too many branch names starting with '$initialBranchName'. " +
+                    "Try manually picking a more descriptive branch name here.")
+        }
     }
 }
 
