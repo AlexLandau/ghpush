@@ -1,5 +1,6 @@
 package com.github.alexlandau.ghss
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 
 
@@ -39,8 +40,8 @@ data class CommitDiagnosis(
     val prStatus: String?,
 )
 
-
-fun getDiagnosis(repoPath: File): Diagnosis {
+// TODO: Pass in a mockable gh object
+fun getDiagnosis(repoPath: File, useGh: Boolean): Diagnosis {
     val commits = getCommitHashesOnBranch(repoPath)
     val longHashes = commits.map { it.longHash }
 
@@ -57,12 +58,32 @@ fun getDiagnosis(repoPath: File): Diagnosis {
         val title = it.title
         val ghBranchTag = ghBranchTags[fullHash]
         val remoteHash = ghBranchTag?.let { remoteHashes[it] }
+        // Don't invoke gh while testing
+        val prNumber = if (useGh) ghBranchTag?.let { findPrNumber(ghBranchTag, repoPath) } else null
         // TODO: Fill in the nulls here
         CommitDiagnosis(
-            fullHash, shortHash, title, ghBranchTag, remoteHash, prNumber = null, prStatus = null
+            fullHash, shortHash, title, ghBranchTag, remoteHash, prNumber, prStatus = null
         )
     }
     return Diagnosis(diagnosisCommits)
+}
+
+fun findPrNumber(ghBranchTag: String, repoPath: File): Int? {
+    // TODO: Check that this actually works, then post-filter (?) the output
+    // TODO: Try using the template feature to remove the need to parse JSON
+    val outputJson = getCommandOutput(listOf("gh", "pr", "list", "--json=headRefName,number", "--head", ghBranchTag), repoPath).trim()
+    if (outputJson == "[]") {
+        return null
+    }
+    val mapper = ObjectMapper()
+    val arrayNode = mapper.readTree(outputJson)
+    for (node in arrayNode) {
+        // TODO: Reconcile the correct behavior I'm seeing now with the behavior I remember seeing before
+        if (node["headRefName"].asText() == ghBranchTag) {
+            return node["number"].asInt()
+        }
+    }
+    return null
 }
 
 fun getRemoteHashes(ghBranchNames: Collection<String>, repoPath: File): Map<String, String> {

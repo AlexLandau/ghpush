@@ -23,6 +23,7 @@ fun main() {
 
 // TODO: Check that nothing is staged before starting
 // TODO: Learn about .git/sequencer, maybe I can use that for something cool?
+// TODO: Deal with the issue around commit reordering
 fun runGhss(repoDir: File) {
     println("(1/4) Checking preconditions...")
     // TODO: Specially handle the cases where these aren't installed
@@ -43,7 +44,7 @@ fun runGhss(repoDir: File) {
     getCommandOutput(listOf("git", "fetch", "origin"), repoDir)
 
     println("(3/4) Checking the state of the local branch...")
-    val diagnosis = getDiagnosis(repoDir)
+    val diagnosis = getDiagnosis(repoDir, useGh = true)
     val actionPlan = getActionToTake(diagnosis)
 
     val unused: Unit = when (actionPlan) {
@@ -56,6 +57,8 @@ fun runGhss(repoDir: File) {
     // TODO: Actually carry out the relevant actions
     if (actionPlan == ActionPlan.AddBranchNames) {
         addBranchNames(diagnosis, repoDir)
+    } else if (actionPlan == ActionPlan.ReadyToPush) {
+        pushAndManagePrs(diagnosis, repoDir)
     }
 }
 
@@ -172,6 +175,52 @@ internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (Str
                     "Try manually picking a more descriptive branch name here.")
         }
     }
+}
+
+fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File) {
+    val pushCommand = ArrayList<String>()
+    pushCommand.add("git")
+    pushCommand.add("push")
+    pushCommand.add("origin")
+    for (commit in diagnosis.commits) {
+        // TODO: Switch to using --force-with-lease
+        pushCommand.add("+${commit.fullHash}:refs/heads/${commit.ghBranchTag}")
+    }
+    getCommandOutput(pushCommand, repoDir)
+
+    var lastCommitBranch = "develop" // TODO: Make configurable
+    for (commit in diagnosis.commits) {
+        val body = getCommitBody(commit.fullHash, repoDir)
+        if (commit.prNumber == null) {
+            getCommandOutput(
+                listOf(
+                    "gh", "pr", "create",
+                    "--title", commit.title,
+                    "--body", body,
+                    "--base", lastCommitBranch,
+                    "--head", commit.ghBranchTag!!,
+                    "--draft"
+                ), repoDir
+            )
+        } else {
+            // Handle existing PRs
+            getCommandOutput(
+                listOf(
+                    "gh", "pr", "edit",
+                    commit.prNumber.toString(),
+                    "--title", commit.title,
+                    "--body", body,
+                    "--base", lastCommitBranch
+                ), repoDir
+            )
+        }
+        lastCommitBranch = commit.ghBranchTag!!
+    }
+}
+
+internal fun getCommitBody(hash: String, repoDir: File): String {
+    // git log -n 1 --format=format:%b <HASH>
+    return getCommandOutput(listOf("git", "log", "-n", "1", "--format=format:%b", hash), repoDir).trim()
 }
 
 internal fun getGitOrigin(repoPath: File): String {

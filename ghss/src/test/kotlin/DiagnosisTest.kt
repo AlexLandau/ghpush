@@ -8,7 +8,7 @@ class DiagnosisTest {
     fun testDiagnosisEmptyBranch() {
         val gitPaths = createNewGitProject()
 
-        val diagnosis = getDiagnosis(gitPaths.localRepo)
+        val diagnosis = getDiagnosis(gitPaths.localRepo, useGh = false)
         assertEquals(Diagnosis(listOf()), diagnosis)
         assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis))
 
@@ -22,7 +22,7 @@ class DiagnosisTest {
         getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
         getCommandOutput(listOf("git", "commit", "-m", "Add one file"), gitPath.localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo)
+        val diagnosis = getDiagnosis(gitPath.localRepo, useGh = false)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -57,7 +57,7 @@ class DiagnosisTest {
         getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
         getCommandOutput(listOf("git", "commit", "-m", "Add a completely valid sentence"), gitPath.localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo)
+        val diagnosis = getDiagnosis(gitPath.localRepo, useGh = false)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -102,7 +102,7 @@ class DiagnosisTest {
         getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
         getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo)
+        val diagnosis = getDiagnosis(gitPath.localRepo, useGh = false)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -131,7 +131,7 @@ class DiagnosisTest {
 
         getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), gitPath.localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo)
+        val diagnosis = getDiagnosis(gitPath.localRepo, useGh = false)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
