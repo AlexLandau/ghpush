@@ -24,6 +24,7 @@ fun main() {
 // TODO: Check that nothing is staged before starting
 // TODO: Learn about .git/sequencer, maybe I can use that for something cool?
 // TODO: Deal with the issue around commit reordering
+// TODO: Let the user choose whether to push as drafts
 fun runGhss(repoDir: File) {
     println("(1/4) Checking preconditions...")
     // TODO: Specially handle the cases where these aren't installed
@@ -87,7 +88,7 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
                     println("  x - Exit the CLI without making changes")
                     println("  ? - Display this help message")
                 } else if (input == "a") {
-                    val branchName = autogenerateBranchName(commit.title, repoDir)
+                    val branchName = autogenerateBranchName(commit.title, repoDir, branchNamesToAdd.values.toSet())
                     println("  The branch name is: $branchName")
                     branchNamesToAdd.put(commit.fullHash, branchName)
                     break
@@ -130,8 +131,12 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
     }
 }
 
-private fun autogenerateBranchName(commitTitle: String, repoDir: File): String {
+// TODO: Also disallow branch names picked earlier
+private fun autogenerateBranchName(commitTitle: String, repoDir: File, alreadyPickedBranchNames: Set<String>): String {
     return autogenerateBranchName(commitTitle, { branchName ->
+        if (alreadyPickedBranchNames.contains(branchName)) {
+            return@autogenerateBranchName true
+        }
         // Check if the remote has a branch with this name
         val output = getCommandOutput(listOf("git", "branch", "--list", "-r", "origin/$branchName"), repoDir)
         !output.isBlank()
@@ -190,21 +195,22 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File) {
 
     var lastCommitBranch = "develop" // TODO: Make configurable
     for (commit in diagnosis.commits) {
-        val body = getCommitBody(commit.fullHash, repoDir)
+        val rawBody = getCommitBody(commit.fullHash, repoDir)
+        val body = rawBody.lines().filterNot { it.startsWith("gh-branch: ") }.joinToString("\n").trim()
         if (commit.prNumber == null) {
-            getCommandOutput(
+            val prCreateOutput = getCommandOutput(
                 listOf(
                     "gh", "pr", "create",
                     "--title", commit.title,
                     "--body", body,
                     "--base", lastCommitBranch,
-                    "--head", commit.ghBranchTag!!,
-                    "--draft"
+                    "--head", commit.ghBranchTag!!
                 ), repoDir
             )
+            println("prCreateOutput: $prCreateOutput")
         } else {
             // Handle existing PRs
-            getCommandOutput(
+            val prEditOutput = getCommandOutput(
                 listOf(
                     "gh", "pr", "edit",
                     commit.prNumber.toString(),
@@ -213,6 +219,7 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File) {
                     "--base", lastCommitBranch
                 ), repoDir
             )
+            println("prEditOutput: $prEditOutput")
         }
         lastCommitBranch = commit.ghBranchTag!!
     }
