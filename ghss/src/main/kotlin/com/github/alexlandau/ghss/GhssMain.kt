@@ -23,6 +23,7 @@ fun main() {
 
 // TODO: Check that nothing is staged before starting
 // TODO: Learn about .git/sequencer, maybe I can use that for something cool?
+// TODO: I think EDITOR="mv rebaseInstructions" will work to set up an interactive rebase
 // TODO: Deal with the issue around commit reordering
 // TODO: Let the user choose whether to push as drafts
 fun runGhss(repoDir: File) {
@@ -40,12 +41,13 @@ fun runGhss(repoDir: File) {
     if (!isLoggedIntoGh) {
         throw GhssException("You must be logged into the gh cli to use ghsync. Run: gh auth login --hostname $gitRemoteUrl")
     }
+    val gh = RealGh(repoDir)
 
     println("(2/4) Fetching from origin...")
     getCommandOutput(listOf("git", "fetch", "origin"), repoDir)
 
     println("(3/4) Checking the state of the local branch...")
-    val diagnosis = getDiagnosis(repoDir, useGh = true)
+    val diagnosis = getDiagnosis(repoDir, gh)
     val actionPlan = getActionToTake(diagnosis)
 
     val unused: Unit = when (actionPlan) {
@@ -59,7 +61,7 @@ fun runGhss(repoDir: File) {
     if (actionPlan == ActionPlan.AddBranchNames) {
         addBranchNames(diagnosis, repoDir)
     } else if (actionPlan == ActionPlan.ReadyToPush) {
-        pushAndManagePrs(diagnosis, repoDir)
+        pushAndManagePrs(diagnosis, repoDir, gh)
     }
 }
 
@@ -182,7 +184,7 @@ internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (Str
     }
 }
 
-fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File) {
+fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
     val pushCommand = ArrayList<String>()
     pushCommand.add("git")
     pushCommand.add("push")
@@ -193,33 +195,32 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File) {
     }
     getCommandOutput(pushCommand, repoDir)
 
+    for (commit in diagnosis.commits) {
+        // Record what we pushed, so future invocations can tell if the branch changed upstream
+        val trackerBranchName = "ghss/pushed-to/develop/${commit.ghBranchTag}"
+        val startPoint = commit.fullHash
+        getCommandOutput(listOf("git", "branch", "--no-track", "-f", trackerBranchName, startPoint), repoDir)
+    }
+
     var lastCommitBranch = "develop" // TODO: Make configurable
     for (commit in diagnosis.commits) {
         val rawBody = getCommitBody(commit.fullHash, repoDir)
         val body = rawBody.lines().filterNot { it.startsWith("gh-branch: ") }.joinToString("\n").trim()
         if (commit.prNumber == null) {
-            val prCreateOutput = getCommandOutput(
-                listOf(
-                    "gh", "pr", "create",
-                    "--title", commit.title,
-                    "--body", body,
-                    "--base", lastCommitBranch,
-                    "--head", commit.ghBranchTag!!
-                ), repoDir
+            gh.createPr(
+                title = commit.title,
+                body = body,
+                baseBranch = lastCommitBranch,
+                headBranch = commit.ghBranchTag!!
             )
-            println("prCreateOutput: $prCreateOutput")
         } else {
             // Handle existing PRs
-            val prEditOutput = getCommandOutput(
-                listOf(
-                    "gh", "pr", "edit",
-                    commit.prNumber.toString(),
-                    "--title", commit.title,
-                    "--body", body,
-                    "--base", lastCommitBranch
-                ), repoDir
+            gh.editPr(
+                prNumber = commit.prNumber,
+                title = commit.title,
+                body = body,
+                baseBranch = lastCommitBranch
             )
-            println("prEditOutput: $prEditOutput")
         }
         lastCommitBranch = commit.ghBranchTag!!
     }

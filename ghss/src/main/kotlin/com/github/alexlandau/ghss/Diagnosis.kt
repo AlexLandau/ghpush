@@ -33,6 +33,11 @@ data class CommitDiagnosis(
      */
     val remoteHash: String?,
     /**
+     * The hash of the commit we previously pushed for this branch, if any, as indicated by the appropriate
+     * ghss/pushed-to/... branch.
+     */
+    val previouslyPushedHash: String?,
+    /**
      * The PR number for the PR opened for this target branch, if any.
      */
     val prNumber: Int?,
@@ -40,8 +45,7 @@ data class CommitDiagnosis(
     val prStatus: String?,
 )
 
-// TODO: Pass in a mockable gh object
-fun getDiagnosis(repoPath: File, useGh: Boolean): Diagnosis {
+fun getDiagnosis(repoPath: File, gh: Gh): Diagnosis {
     val commits = getCommitHashesOnBranch(repoPath)
     val longHashes = commits.map { it.longHash }
 
@@ -58,30 +62,20 @@ fun getDiagnosis(repoPath: File, useGh: Boolean): Diagnosis {
         val title = it.title
         val ghBranchTag = ghBranchTags[fullHash]
         val remoteHash = ghBranchTag?.let { remoteHashes[it] }
-        // Don't invoke gh while testing
-        val prNumber = if (useGh) ghBranchTag?.let { findPrNumber(ghBranchTag, repoPath) } else null
+        val previouslyPushedHash = ghBranchTag?.let { findPreviouslyPushedHash(it, repoPath) }
+        val prNumber = ghBranchTag?.let { gh.findPrNumber(ghBranchTag) }
         // TODO: Fill in the nulls here
         CommitDiagnosis(
-            fullHash, shortHash, title, ghBranchTag, remoteHash, prNumber, prStatus = null
+            fullHash, shortHash, title, ghBranchTag, remoteHash, previouslyPushedHash, prNumber, prStatus = null
         )
     }
     return Diagnosis(diagnosisCommits)
 }
 
-fun findPrNumber(ghBranchTag: String, repoPath: File): Int? {
-    // TODO: Check that this actually works, then post-filter (?) the output
-    // TODO: Try using the template feature to remove the need to parse JSON
-    val outputJson = getCommandOutput(listOf("gh", "pr", "list", "--json=headRefName,number", "--head", ghBranchTag), repoPath).trim()
-    if (outputJson == "[]") {
-        return null
-    }
-    val mapper = ObjectMapper()
-    val arrayNode = mapper.readTree(outputJson)
-    for (node in arrayNode) {
-        // TODO: Reconcile the correct behavior I'm seeing now with the behavior I remember seeing before
-        if (node["headRefName"].asText() == ghBranchTag) {
-            return node["number"].asInt()
-        }
+fun findPreviouslyPushedHash(ghBranchName: String, repoPath: File): String? {
+    val result = exec(listOf("git", "rev-parse", "--verify", "-q", "ghss/pushed-to/develop/${ghBranchName}"), repoPath)
+    if (result.exitValue == 0 && result.stdOut.isNotBlank()) {
+        return result.stdOut.trim()
     }
     return null
 }
