@@ -139,6 +139,7 @@ class DiagnosisTest {
         getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
         getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
 
+        // TODO: Version of this with pushAndManagePrs instead
         getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), gitPath.localRepo)
 
         val diagnosis = getDiagnosis(gitPath.localRepo, gh)
@@ -203,6 +204,48 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis))
+
+        gitPath.deleteTempDirs()
+    }
+
+
+    @Test
+    fun testBranchForceModifiedUpstream() {
+        val gitPath = createNewGitProject()
+        val gh = MockGh()
+        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
+
+        val firstDiagnosis = getDiagnosis(gitPath.localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, gitPath.localRepo, gh)
+
+        // Amend the commit upstream
+        getCommandOutput(listOf("git", "checkout", "add-foo"), gitPath.originRepo)
+        writeFile(gitPath.originRepo, "foo.txt", "Hello, moon!")
+        getCommandOutput(listOf("git", "add", "."), gitPath.originRepo)
+        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.originRepo)
+
+        // TODO: Variant where we also have local changes here
+        getCommandOutput(listOf("git", "fetch"), gitPath.localRepo)
+
+        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        assertEquals(
+            Diagnosis(listOf(
+                CommitDiagnosis(
+                    fullHash = "1",
+                    shortHash = "2",
+                    title = "Add one file",
+                    ghBranchTag = "add-foo",
+                    remoteHash = "3",
+                    previouslyPushedHash = "1",
+                    prNumber = 1,
+                    prStatus = null
+                ),
+            )),
+            normalizeHashes(diagnosis)
+        )
+        assertEquals(ActionPlan.ReconcileCommits("1", "3", "1"), getActionToTake(normalizeHashes(diagnosis)))
 
         gitPath.deleteTempDirs()
     }

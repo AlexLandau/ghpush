@@ -16,13 +16,16 @@ sealed class ActionPlan {
     /**
      * Indicates a commit needs updates. Contains the local hash and the remote hash.
      */
-    data class ReconcileCommits(val localHash: String, val remoteHash: String): ActionPlan()
+    data class ReconcileCommits(val localHash: String, val remoteHash: String, val previouslyPushedHash: String?): ActionPlan()
 }
 
 fun getActionToTake(diagnosis: Diagnosis): ActionPlan {
     for (commit in diagnosis.commits) {
-        if (commit.remoteHash != null && commit.remoteHash != commit.fullHash) {
-            return ActionPlan.ReconcileCommits(commit.fullHash, commit.remoteHash)
+        // TODO: Reconsider case where remoteHash == fullHash but previouslyPushedHash is different and non-null
+        if (commit.remoteHash != null
+            && commit.remoteHash != commit.fullHash
+            && commit.remoteHash != commit.previouslyPushedHash) {
+            return ActionPlan.ReconcileCommits(commit.fullHash, commit.remoteHash, commit.previouslyPushedHash)
         }
     }
     for (commit in diagnosis.commits) {
