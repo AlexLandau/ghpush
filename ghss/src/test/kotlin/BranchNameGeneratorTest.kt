@@ -1,5 +1,6 @@
 import com.github.alexlandau.ghss.autogenerateBranchName
-import org.junit.jupiter.api.Assertions.assertEquals
+import com.github.alexlandau.ghss.isValidGhBranchName
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class BranchNameGeneratorTest {
@@ -10,6 +11,28 @@ class BranchNameGeneratorTest {
         assertEquals("improvement-and-support", generate("[improvement] //, /* */, and # support"))
         assertEquals("0123456789012345678901234567890123456789", generate("0123456789012345678901234567890123456789toolong"))
         assertEquals("this-is-an-example-particularly-long-com", generate("This is an example, particularly long commit title."))
+    }
+
+    @Test
+    fun testIsValidGhBranchName() {
+        // TODO: I haven't actually looked up the actual GH branch name requirements
+        assertTrue(isValidGhBranchName("ok"))
+        assertTrue(isValidGhBranchName("just-some-normal-name"))
+        assertTrue(isValidGhBranchName("username/just-some-normal-name"))
+        assertTrue(isValidGhBranchName("username/category/still-a-normal-name"))
+        assertTrue(isValidGhBranchName("hyphenated-category/still-a-normal-name"))
+
+//        assertFalse(isValidGhBranchName("username/category/but-this-one-is-just-way-too-long-unfortunately"))
+        assertFalse(isValidGhBranchName("-hyphen-at-start"))
+        assertFalse(isValidGhBranchName("hyphen-at-end-"))
+        assertFalse(isValidGhBranchName("double--hyphens"))
+        assertFalse(isValidGhBranchName(""))
+        assertFalse(isValidGhBranchName("/starts-with-a-slash"))
+        assertFalse(isValidGhBranchName("ends-with-a-slash/"))
+        assertFalse(isValidGhBranchName("double//slash"))
+        assertFalse(isValidGhBranchName("slash/-and-hyphen"))
+        assertFalse(isValidGhBranchName("hyphen-/and-slash"))
+        assertFalse(isValidGhBranchName("bad character"))
     }
 }
 

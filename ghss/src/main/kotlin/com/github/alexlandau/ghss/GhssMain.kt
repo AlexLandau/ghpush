@@ -41,6 +41,7 @@ fun runGhss(repoDir: File) {
     if (!isLoggedIntoGh) {
         throw GhssException("You must be logged into the gh cli to use ghsync. Run: gh auth login --hostname $gitRemoteUrl")
     }
+    warnIfNotDeleteBranchOnMerge(repoDir)
     val gh = RealGh(repoDir)
 
     println("(2/4) Fetching from origin...")
@@ -60,8 +61,23 @@ fun runGhss(repoDir: File) {
     // TODO: Actually carry out the relevant actions
     if (actionPlan == ActionPlan.AddBranchNames) {
         addBranchNames(diagnosis, repoDir)
+        // TODO: Proceed to push if appropriate (need to account for modified commit hashes)
     } else if (actionPlan == ActionPlan.ReadyToPush) {
         pushAndManagePrs(diagnosis, repoDir, gh)
+    }
+}
+
+fun warnIfNotDeleteBranchOnMerge(repoDir: File) {
+    val deleteBranchOnMergeResult = getCommandOutput(listOf(
+        "gh", "repo", "view",
+        "--json=deleteBranchOnMerge",
+        "--jq=.deleteBranchOnMerge"
+    ), repoDir).trim()
+    if (deleteBranchOnMergeResult == "false") {
+        println("Warning: This repository is not configured with the 'Automatically delete head branches' option. " +
+                "After merging a PR, you may need to delete its branch manually to update follow-up PRs to target " +
+                "the correct branch. If you are an owner of the repo, consider enabling this option under Settings " +
+                "-> General -> Pull Requests.")
     }
 }
 
@@ -82,7 +98,6 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
                                 "file has been reached."
                     )
                 }
-                println("The input was: $input") // (debug)
                 // TODO: Check for invalid characters
                 if (input == "?") {
                     println("Special commands are:")
@@ -167,6 +182,11 @@ internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (Str
         }
     }
     val initialBranchName = sb.toString().take(40).removeSuffix("-")
+    if (!isValidGhBranchName(initialBranchName)) {
+        throw GhssException("The branch name auto-generation somehow created a name that looks invalid.\n" +
+                "    Input (the commit title): $commitTitle\n" +
+                "    Generated branch name: $initialBranchName")
+    }
     if (!isBranchNameTaken(initialBranchName)) {
         return initialBranchName
     }
@@ -174,6 +194,11 @@ internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (Str
     while (true) {
         val candidateName = "$initialBranchName-$suffixNum"
         if (!isBranchNameTaken(candidateName)) {
+            if (!isValidGhBranchName(candidateName)) {
+                throw GhssException("The branch name auto-generation somehow created a name that looks invalid.\n" +
+                        "    Input (the commit title): $commitTitle\n" +
+                        "    Generated branch name: $candidateName")
+            }
             return candidateName
         }
         suffixNum++
@@ -182,6 +207,35 @@ internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (Str
                     "Try manually picking a more descriptive branch name here.")
         }
     }
+}
+
+internal fun isValidGhBranchName(branchName: String): Boolean {
+    // TODO: I haven't actually looked up the actual GH branch name requirements
+    // See: https://git-scm.com/docs/git-check-ref-format
+    // But... we also probably want to be somewhat stricter just for sanity
+    // See also: https://docs.github.com/en/get-started/using-git/dealing-with-special-characters-in-branch-and-tag-names#naming-branches-and-tags
+    if (branchName.isEmpty()) {
+        return false
+    }
+    // TODO: Figure out an actual limit? Should probably be more lenient than the autogen limit
+    if (branchName.chars().count() > 100) {
+        return false
+    }
+    if (!branchName.chars().allMatch(::isValidGhBranchChar)) {
+        return false
+    }
+    if (branchName.split('/', '-').any { it.isEmpty() }) {
+        return false
+    }
+    return true
+}
+
+private fun isValidGhBranchChar(char: Int): Boolean {
+    return Character.isLetterOrDigit(char)
+            || char == '-'.code
+            || char == '_'.code
+            || char == '/'.code
+            || char == '.'.code
 }
 
 fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
@@ -213,6 +267,7 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
                 baseBranch = lastCommitBranch,
                 headBranch = commit.ghBranchTag!!
             )
+            println("Created a PR for ${commit.shortHash} ${commit.title}")
         } else {
             // Handle existing PRs
             gh.editPr(

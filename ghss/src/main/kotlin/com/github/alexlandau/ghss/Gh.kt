@@ -43,7 +43,9 @@ class RealGh(private val repoPath: File): Gh {
                 "--head", headBranch
             ), repoPath
         )
-        println("prCreateOutput: $prCreateOutput")
+        // Output is the URL of the created PR
+        println(prCreateOutput.trim())
+
     }
 
     override fun editPr(prNumber: Int, title: String, body: String, baseBranch: String) {
