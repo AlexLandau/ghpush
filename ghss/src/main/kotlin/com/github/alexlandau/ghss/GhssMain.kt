@@ -1,12 +1,18 @@
 package com.github.alexlandau.ghss
 
 import java.io.File
-import java.nio.charset.StandardCharsets
 import java.util.*
 
-fun main() {
+fun main(args: Array<String>) {
     try {
-        runGhss(File("."))
+        val options: Options = readArgs(args)
+        if (options.help) {
+            printHelp()
+        } else if (options.version) {
+            printVersion()
+        } else {
+            runGhss(options, File("."))
+        }
     } catch (e: GhssException) {
         println(e.messageToUser)
         System.exit(1)
@@ -21,12 +27,21 @@ fun main() {
     }
 }
 
+fun printHelp() {
+    println("ghss - Tool for syncing stacked git commits to stacked GitHub PRs")
+    println("TODO: Write useful help -- in most cases just run to push")
+}
+
+fun printVersion() {
+    println("Early alpha version of ghss -- no versioning scheme yet!")
+}
+
 // TODO: Check that nothing is staged before starting
 // TODO: Learn about .git/sequencer, maybe I can use that for something cool?
 // TODO: I think EDITOR="mv rebaseInstructions" will work to set up an interactive rebase
 // TODO: Deal with the issue around commit reordering
 // TODO: Let the user choose whether to push as drafts
-fun runGhss(repoDir: File) {
+fun runGhss(options: Options, repoDir: File) {
     println("(1/4) Checking preconditions...")
     // TODO: Specially handle the cases where these aren't installed
     val gitVersion = getCommandOutput(listOf("git", "--version"), repoDir).trim()
@@ -49,7 +64,7 @@ fun runGhss(repoDir: File) {
 
     println("(3/4) Checking the state of the local branch...")
     val diagnosis = getDiagnosis(repoDir, gh)
-    val actionPlan = getActionToTake(diagnosis)
+    val actionPlan = getActionToTake(diagnosis, options)
 
     val unused: Unit = when (actionPlan) {
         ActionPlan.AddBranchNames -> println("Evaluation: Some commits lack branch names")
@@ -63,8 +78,22 @@ fun runGhss(repoDir: File) {
         addBranchNames(diagnosis, repoDir)
         // TODO: Proceed to push if appropriate (need to account for modified commit hashes)
     } else if (actionPlan == ActionPlan.ReadyToPush) {
+        println("(4/4) Pushing to GitHub and updating PRs...")
         pushAndManagePrs(diagnosis, repoDir, gh)
+    } else if (actionPlan == ActionPlan.ReconcileCommits) {
+        reconcileCommits(diagnosis, repoDir)
     }
+}
+
+fun reconcileCommits(diagnosis: Diagnosis, repoDir: File) {
+    println("Some PRs have been changed on GitHub since you last pushed:")
+    for (commit in diagnosis.commits) {
+        if (commit.remoteHash != null && commit.remoteHash != commit.previouslyPushedHash) {
+            println("  - ${commit.shortHash} ${commit.title}")
+        }
+    }
+    println("\nNot pushing to avoid overwriting these changes.")
+    // TODO: Add --force, --pull options
 }
 
 fun warnIfNotDeleteBranchOnMerge(repoDir: File) {
