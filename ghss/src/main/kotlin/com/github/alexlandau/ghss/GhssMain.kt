@@ -76,7 +76,13 @@ fun runGhss(options: Options, repoDir: File) {
     // TODO: Actually carry out the relevant actions
     if (actionPlan == ActionPlan.AddBranchNames) {
         addBranchNames(diagnosis, repoDir)
-        // TODO: Proceed to push if appropriate (need to account for modified commit hashes)
+        // Proceed to push if appropriate (accounting for modified commit hashes)
+        val followupDiagnosis = getDiagnosis(repoDir, gh)
+        val followupActionPlan = getActionToTake(followupDiagnosis, options)
+        if (followupActionPlan == ActionPlan.ReadyToPush) {
+            println("(4/4) Pushing to GitHub and updating PRs...")
+            pushAndManagePrs(followupDiagnosis, repoDir, gh)
+        }
     } else if (actionPlan == ActionPlan.ReadyToPush) {
         println("(4/4) Pushing to GitHub and updating PRs...")
         pushAndManagePrs(diagnosis, repoDir, gh)
