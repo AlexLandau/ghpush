@@ -11,7 +11,7 @@ class DiagnosisTest {
 
         val diagnosis = getDiagnosis(gitPaths.localRepo, gh)
         assertEquals(Diagnosis(listOf()), diagnosis)
-        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis))
+        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
 
         gitPaths.deleteTempDirs()
     }
@@ -40,7 +40,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
-        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis))
+        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis, fromArgs()))
 
         gitPath.deleteTempDirs()
     }
@@ -97,7 +97,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
-        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis))
+        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis, fromArgs()))
 
         gitPath.deleteTempDirs()
     }
@@ -126,7 +126,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
-        assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis))
+        assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis, fromArgs()))
 
         gitPath.deleteTempDirs()
     }
@@ -158,7 +158,7 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
-        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis))
+        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
 
         gitPath.deleteTempDirs()
     }
@@ -203,14 +203,14 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
-        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis))
+        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
 
         gitPath.deleteTempDirs()
     }
 
 
     @Test
-    fun testBranchForceModifiedUpstream() {
+    fun testBranchModifiedUpstream() {
         val gitPath = createNewGitProject()
         val gh = MockGh()
         writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
@@ -245,7 +245,48 @@ class DiagnosisTest {
             )),
             normalizeHashes(diagnosis)
         )
-        assertEquals(ActionPlan.ReconcileCommits("1", "3", "1"), getActionToTake(normalizeHashes(diagnosis)))
+        assertEquals(ActionPlan.ReconcileCommits, getActionToTake(diagnosis, fromArgs()))
+
+        gitPath.deleteTempDirs()
+    }
+
+    @Test
+    fun testBranchModifiedUpstreamWithForce() {
+        val gitPath = createNewGitProject()
+        val gh = MockGh()
+        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
+
+        val firstDiagnosis = getDiagnosis(gitPath.localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, gitPath.localRepo, gh)
+
+        // Amend the commit upstream
+        getCommandOutput(listOf("git", "checkout", "add-foo"), gitPath.originRepo)
+        writeFile(gitPath.originRepo, "foo.txt", "Hello, moon!")
+        getCommandOutput(listOf("git", "add", "."), gitPath.originRepo)
+        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.originRepo)
+
+        // TODO: Variant where we also have local changes here
+        getCommandOutput(listOf("git", "fetch"), gitPath.localRepo)
+
+        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        assertEquals(
+            Diagnosis(listOf(
+                CommitDiagnosis(
+                    fullHash = "1",
+                    shortHash = "2",
+                    title = "Add one file",
+                    ghBranchTag = "add-foo",
+                    remoteHash = "3",
+                    previouslyPushedHash = "1",
+                    prNumber = 1,
+                    prStatus = null
+                ),
+            )),
+            normalizeHashes(diagnosis)
+        )
+        assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis, fromArgs("--force")))
 
         gitPath.deleteTempDirs()
     }

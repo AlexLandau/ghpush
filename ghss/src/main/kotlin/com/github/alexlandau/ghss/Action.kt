@@ -14,18 +14,20 @@ sealed class ActionPlan {
      */
     object AddBranchNames: ActionPlan()
     /**
-     * Indicates a commit needs updates. Contains the local hash and the remote hash.
+     * Indicates at least one already-pushed commit has been changed upstream, and we should try to incorporate
+     * those changes.
      */
-    data class ReconcileCommits(val localHash: String, val remoteHash: String, val previouslyPushedHash: String?): ActionPlan()
+    object ReconcileCommits: ActionPlan()
 }
 
-fun getActionToTake(diagnosis: Diagnosis): ActionPlan {
+fun getActionToTake(diagnosis: Diagnosis, options: Options): ActionPlan {
     for (commit in diagnosis.commits) {
         // TODO: Reconsider case where remoteHash == fullHash but previouslyPushedHash is different and non-null
         if (commit.remoteHash != null
             && commit.remoteHash != commit.fullHash
-            && commit.remoteHash != commit.previouslyPushedHash) {
-            return ActionPlan.ReconcileCommits(commit.fullHash, commit.remoteHash, commit.previouslyPushedHash)
+            && commit.remoteHash != commit.previouslyPushedHash
+            && !options.force) {
+            return ActionPlan.ReconcileCommits
         }
     }
     for (commit in diagnosis.commits) {
