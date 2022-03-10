@@ -1,3 +1,4 @@
+import com.github.alexlandau.ghss.CreatePrResult
 import com.github.alexlandau.ghss.Gh
 
 class MockGh: Gh {
@@ -14,10 +15,11 @@ class MockGh: Gh {
         return prs.entries.find { it.value.headBranch == ghBranchName }?.key
     }
 
-    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String) {
+    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult {
         val pr = MockPr(title, body, baseBranch, headBranch)
         val prNumber = prs.size + 1
         prs.put(prNumber, pr)
+        return CreatePrResult(prNumber)
     }
 
     override fun editPr(prNumber: Int, title: String, body: String, baseBranch: String) {
@@ -25,5 +27,10 @@ class MockGh: Gh {
         pr.title = title
         pr.body = body
         pr.baseBranch = baseBranch
+    }
+
+    override fun editPrBody(prNumber: Int, body: String) {
+        val pr = prs.getValue(prNumber)
+        pr.body = body
     }
 }

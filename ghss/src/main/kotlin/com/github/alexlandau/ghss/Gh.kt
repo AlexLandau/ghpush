@@ -10,9 +10,12 @@ import java.io.File
  */
 interface Gh {
     fun findPrNumber(ghBranchName: String): Int?
-    fun createPr(title: String, body: String, baseBranch: String, headBranch: String)
+    fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult
     fun editPr(prNumber: Int, title: String, body: String, baseBranch: String)
+    fun editPrBody(prNumber: Int, body: String)
 }
+
+data class CreatePrResult(val prNumber: Int)
 
 class RealGh(private val repoPath: File): Gh {
     override fun findPrNumber(ghBranchName: String): Int? {
@@ -33,7 +36,7 @@ class RealGh(private val repoPath: File): Gh {
         return null
     }
 
-    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String) {
+    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult {
         val prCreateOutput = getCommandOutput(
             listOf(
                 "gh", "pr", "create",
@@ -45,7 +48,8 @@ class RealGh(private val repoPath: File): Gh {
         )
         // Output is the URL of the created PR
         println(prCreateOutput.trim())
-
+        val prNumber = prCreateOutput.trim().takeLastWhile { it.isDigit() }.toInt()
+        return CreatePrResult(prNumber)
     }
 
     override fun editPr(prNumber: Int, title: String, body: String, baseBranch: String) {
@@ -56,6 +60,17 @@ class RealGh(private val repoPath: File): Gh {
                 "--title", title,
                 "--body", body,
                 "--base", baseBranch
+            ), repoPath
+        )
+        println("prEditOutput: $prEditOutput")
+    }
+
+    override fun editPrBody(prNumber: Int, body: String) {
+        val prEditOutput = getCommandOutput(
+            listOf(
+                "gh", "pr", "edit",
+                prNumber.toString(),
+                "--body", body,
             ), repoPath
         )
         println("prEditOutput: $prEditOutput")

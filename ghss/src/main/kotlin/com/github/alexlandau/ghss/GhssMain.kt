@@ -286,16 +286,19 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
     }
 
     var lastCommitBranch = "develop" // TODO: Make configurable
+    val createdPrNumbersByFullHash = HashMap<String, Int>()
     for (commit in diagnosis.commits) {
         val rawBody = getCommitBody(commit.fullHash, repoDir)
-        val body = rawBody.lines().filterNot { it.startsWith("gh-branch: ") }.joinToString("\n").trim()
+        val body = rawBody.lines().filterNot { it.startsWith("gh-branch: ") }.joinToString("\n").trim() +
+                getTableSuffix(diagnosis, commit.fullHash)
         if (commit.prNumber == null) {
-            gh.createPr(
+            val created = gh.createPr(
                 title = commit.title,
                 body = body,
                 baseBranch = lastCommitBranch,
                 headBranch = commit.ghBranchTag!!
             )
+            createdPrNumbersByFullHash.put(commit.fullHash, created.prNumber)
             println("Created a PR for ${commit.shortHash} ${commit.title}")
         } else {
             // Handle existing PRs
@@ -308,6 +311,45 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
         }
         lastCommitBranch = commit.ghBranchTag!!
     }
+    if (diagnosis.commits.size >= 2 && createdPrNumbersByFullHash.isNotEmpty()) {
+        // Fix the commit bodies
+        for (commit in diagnosis.commits) {
+            val prNumber = commit.prNumber ?: createdPrNumbersByFullHash[commit.fullHash]
+            if (prNumber == null) {
+                println("Warning: Could not fix the table of commits due to no PR number for ${commit.shortHash} ${commit.title}")
+            }
+            val rawBody = getCommitBody(commit.fullHash, repoDir)
+            val body = rawBody.lines().filterNot { it.startsWith("gh-branch: ") }.joinToString("\n").trim() +
+                    getTableSuffix(diagnosis, commit.fullHash, createdPrNumbersByFullHash)
+            gh.editPrBody(
+                prNumber = commit.prNumber ?: createdPrNumbersByFullHash[commit.fullHash] ?: error("No PR number for commit ${commit.shortHash} ${commit.title}"),
+                body = body,
+            )
+        }
+    }
+}
+
+private fun getTableSuffix(diagnosis: Diagnosis, currentCommitFullHash: String, createdPrNumbersByFullHash: Map<String, Int> = mapOf()): String {
+    if (diagnosis.commits.size <= 1) {
+        return ""
+    }
+
+    val sb = StringBuilder()
+    sb.append("\n\n")
+    sb.append("| Commit stack | PRs |\n")
+    sb.append("| --- | --- |\n")
+
+    for (commit in diagnosis.commits) {
+        val prNumber = commit.prNumber ?: createdPrNumbersByFullHash[commit.fullHash]
+        val prNumberText = prNumber?.let { "#$it" } ?: "PR TBD"
+        if (commit.fullHash == currentCommitFullHash) {
+            sb.append("| **`${commit.shortHash}`** **${commit.title}** | **$prNumberText** |\n")
+        } else {
+            sb.append("| `${commit.shortHash}` ${commit.title} | $prNumberText |\n")
+        }
+    }
+
+    return sb.toString()
 }
 
 internal fun getCommitBody(hash: String, repoDir: File): String {
