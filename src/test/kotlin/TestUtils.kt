@@ -1,5 +1,5 @@
-import com.github.alexlandau.ghss.exec
-import com.github.alexlandau.ghss.getCommandOutput
+package com.github.alexlandau.ghpush
+
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path

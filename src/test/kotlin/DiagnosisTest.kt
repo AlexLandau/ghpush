@@ -1,4 +1,5 @@
-import com.github.alexlandau.ghss.*
+package com.github.alexlandau.ghpush
+
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 

@@ -1,5 +1,5 @@
-import com.github.alexlandau.ghss.autogenerateBranchName
-import com.github.alexlandau.ghss.isValidGhBranchName
+package com.github.alexlandau.ghpush
+
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 

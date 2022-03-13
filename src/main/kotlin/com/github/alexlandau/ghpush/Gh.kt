@@ -1,4 +1,4 @@
-package com.github.alexlandau.ghss
+package com.github.alexlandau.ghpush
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File

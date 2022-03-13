@@ -1,5 +1,5 @@
-import com.github.alexlandau.ghss.getCommandOutput
-import com.github.alexlandau.ghss.loadConfig
+package com.github.alexlandau.ghpush
+
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

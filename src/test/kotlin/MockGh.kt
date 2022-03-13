@@ -1,5 +1,4 @@
-import com.github.alexlandau.ghss.CreatePrResult
-import com.github.alexlandau.ghss.Gh
+package com.github.alexlandau.ghpush
 
 class MockGh: Gh {
     private val prs: MutableMap<Int, MockPr> = HashMap()

@@ -1,4 +1,4 @@
-package com.github.alexlandau.ghss
+package com.github.alexlandau.ghpush
 
 class GhssException(
     val messageToUser: String,

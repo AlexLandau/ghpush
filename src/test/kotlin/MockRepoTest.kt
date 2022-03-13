@@ -1,3 +1,5 @@
+package com.github.alexlandau.ghpush
+
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
