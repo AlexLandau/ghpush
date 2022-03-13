@@ -44,7 +44,7 @@ fun printHelp() {
 }
 
 fun printVersion() {
-    val version = Options::class.java.getResourceAsStream("/com/github/alexlandau/ghpush/version")?.readAllBytes()?.decodeToString()
+    val version = Options::class.java.getResourceAsStream("/ghpush-version.txt")?.readAllBytes()?.decodeToString()
     if (version != null) {
         println(version)
     } else {

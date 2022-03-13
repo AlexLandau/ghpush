@@ -21,6 +21,7 @@ jobs:
       - uses: gradle/gradle-build-action@v2
         with:
           arguments: assemble
+      - run: mv build/graal/ghpush build/distributions/ghpush-linux
       - uses: actions/upload-artifact@v3
         with:
           name: distributions
@@ -31,5 +32,4 @@ jobs:
         with:
           prerelease: true
           name: ghpush ${{ github.ref_name }}
-          files: |
-            build/distributions/*
+          files: build/distributions/*
