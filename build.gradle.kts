@@ -15,11 +15,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
 }
 
-//tasks.register("run", JavaExec::class.java) {
-//    classpath = sourceSets.main.get().runtimeClasspath
-//    mainClass.set("com.github.alexlandau.ghss.GhssMainKt")
-//}
-
 application {
     mainClass.set("com.github.alexlandau.ghss.GhssMainKt")
 }
