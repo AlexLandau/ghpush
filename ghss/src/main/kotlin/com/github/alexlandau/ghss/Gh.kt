@@ -13,6 +13,7 @@ interface Gh {
     fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult
     fun editPr(prNumber: Int, title: String, body: String, baseBranch: String)
     fun editPrBody(prNumber: Int, body: String)
+    fun getUserLogin(): String
 }
 
 data class CreatePrResult(val prNumber: Int)
@@ -74,5 +75,10 @@ class RealGh(private val repoPath: File): Gh {
             ), repoPath
         )
         println("prEditOutput: $prEditOutput")
+    }
+
+    override fun getUserLogin(): String {
+        // Not sure if getting this from 'gh auth status' would be better; this way doesn't require parsing
+        return getCommandOutput(listOf("gh", "api", "user", "--jq", ".login"), repoPath).trim()
     }
 }

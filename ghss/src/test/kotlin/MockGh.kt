@@ -33,4 +33,8 @@ class MockGh: Gh {
         val pr = prs.getValue(prNumber)
         pr.body = body
     }
+
+    override fun getUserLogin(): String {
+        return "TestUser"
+    }
 }

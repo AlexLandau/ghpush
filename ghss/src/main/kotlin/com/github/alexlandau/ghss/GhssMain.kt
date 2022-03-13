@@ -41,6 +41,7 @@ fun printVersion() {
 // TODO: I think EDITOR="mv rebaseInstructions" will work to set up an interactive rebase
 // TODO: Deal with the issue around commit reordering
 // TODO: Let the user choose whether to push as drafts
+// TODO: Avoid errors around empty commits (including when renaming them)
 fun runGhss(options: Options, repoDir: File) {
     println("(1/4) Checking preconditions...")
     // TODO: Specially handle the cases where these aren't installed
@@ -58,6 +59,7 @@ fun runGhss(options: Options, repoDir: File) {
     }
     warnIfNotDeleteBranchOnMerge(repoDir)
     val gh = RealGh(repoDir)
+    val config = loadConfig(repoDir, gh)
 
     println("(2/4) Fetching from origin...")
     getCommandOutput(listOf("git", "fetch", "origin"), repoDir)
@@ -75,7 +77,7 @@ fun runGhss(options: Options, repoDir: File) {
 
     // TODO: Actually carry out the relevant actions
     if (actionPlan == ActionPlan.AddBranchNames) {
-        addBranchNames(diagnosis, repoDir)
+        addBranchNames(diagnosis, config, repoDir)
         // Proceed to push if appropriate (accounting for modified commit hashes)
         val followupDiagnosis = getDiagnosis(repoDir, gh)
         val followupActionPlan = getActionToTake(followupDiagnosis, options)
@@ -116,7 +118,8 @@ fun warnIfNotDeleteBranchOnMerge(repoDir: File) {
     }
 }
 
-fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
+fun addBranchNames(diagnosis: Diagnosis, config: Config, repoDir: File) {
+    val prefixToAdd = config.prefix?.let { it.removeSuffix("/") }?.ifBlank { null }
     // The key is the full hash from the diagnosis
     val branchNamesToAdd = HashMap<String, String>()
     for (commit in diagnosis.commits) {
@@ -140,7 +143,7 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
                     println("  x - Exit the CLI without making changes")
                     println("  ? - Display this help message")
                 } else if (input == "a") {
-                    val branchName = autogenerateBranchName(commit.title, repoDir, branchNamesToAdd.values.toSet())
+                    val branchName = autogenerateBranchName(commit.title, prefixToAdd, repoDir, branchNamesToAdd.values.toSet())
                     println("  The branch name is: $branchName")
                     branchNamesToAdd.put(commit.fullHash, branchName)
                     break
@@ -150,7 +153,12 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
                     println("  Please enter a branch name (or use 'x' to abort and exit)")
                     continue
                 } else {
-                    branchNamesToAdd.put(commit.fullHash, input)
+                    val branchName = if (prefixToAdd != null && !input.startsWith("$prefixToAdd/")) {
+                        "$prefixToAdd/$input"
+                    } else {
+                        input
+                    }
+                    branchNamesToAdd.put(commit.fullHash, branchName)
                     break
                 }
             }
@@ -184,8 +192,8 @@ fun addBranchNames(diagnosis: Diagnosis, repoDir: File) {
 }
 
 // TODO: Also disallow branch names picked earlier
-private fun autogenerateBranchName(commitTitle: String, repoDir: File, alreadyPickedBranchNames: Set<String>): String {
-    return autogenerateBranchName(commitTitle, { branchName ->
+private fun autogenerateBranchName(commitTitle: String, prefix: String?, repoDir: File, alreadyPickedBranchNames: Set<String>): String {
+    return autogenerateBranchName(commitTitle, prefix, { branchName ->
         if (alreadyPickedBranchNames.contains(branchName)) {
             return@autogenerateBranchName true
         }
@@ -194,7 +202,7 @@ private fun autogenerateBranchName(commitTitle: String, repoDir: File, alreadyPi
         !output.isBlank()
     })
 }
-internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (String) -> Boolean): String {
+internal fun autogenerateBranchName(commitTitle: String, prefix: String?, isBranchNameTaken: (String) -> Boolean): String {
     val withHyphensArray = commitTitle.codePoints().map { codePoint ->
         if (!Character.isLetterOrDigit(codePoint)) {
             '-'.code
@@ -216,7 +224,8 @@ internal fun autogenerateBranchName(commitTitle: String, isBranchNameTaken: (Str
             lastCharWasAHyphen = false
         }
     }
-    val initialBranchName = sb.toString().take(40).removeSuffix("-")
+    val prefixString = prefix?.let { "$it/" } ?: ""
+    val initialBranchName = prefixString + sb.toString().take(40).removeSuffix("-")
     if (!isValidGhBranchName(initialBranchName)) {
         throw GhssException("The branch name auto-generation somehow created a name that looks invalid.\n" +
                 "    Input (the commit title): $commitTitle\n" +

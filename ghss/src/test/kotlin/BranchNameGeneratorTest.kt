@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 class BranchNameGeneratorTest {
     @Test
     fun testBranchNameAutogenerator() {
-        val generate = { title: String -> autogenerateBranchName(title, { false }) }
+        val generate = { title: String -> autogenerateBranchName(title, null, { false }) }
         assertEquals("this-is-an-example-commit-title", generate("This is an example commit title."))
         assertEquals("improvement-and-support", generate("[improvement] //, /* */, and # support"))
         assertEquals("0123456789012345678901234567890123456789", generate("0123456789012345678901234567890123456789toolong"))

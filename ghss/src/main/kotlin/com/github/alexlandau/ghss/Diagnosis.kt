@@ -1,6 +1,5 @@
 package com.github.alexlandau.ghss
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 
 
