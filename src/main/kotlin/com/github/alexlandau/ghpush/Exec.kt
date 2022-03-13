@@ -67,7 +67,7 @@ internal fun getCommandOutput(command: List<String>, dir: File): String {
                 "Standard output:\n${result.stdOut}\nStandard error:\n${result.stdErr}"
             }
         }
-        throw GhssException("The command '${command.toCommandString()}' failed. Its output was:\n${outputToShow}")
+        throw GhpushException("The command '${command.toCommandString()}' failed. Its output was:\n${outputToShow}")
     }
     return result.stdOut
 }

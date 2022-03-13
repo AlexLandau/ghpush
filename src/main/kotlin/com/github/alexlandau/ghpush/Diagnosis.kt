@@ -33,7 +33,7 @@ data class CommitDiagnosis(
     val remoteHash: String?,
     /**
      * The hash of the commit we previously pushed for this branch, if any, as indicated by the appropriate
-     * ghss/pushed-to/... branch.
+     * ghpush/pushed-to/... branch.
      */
     val previouslyPushedHash: String?,
     /**
@@ -72,7 +72,7 @@ fun getDiagnosis(repoPath: File, gh: Gh): Diagnosis {
 }
 
 fun findPreviouslyPushedHash(ghBranchName: String, repoPath: File): String? {
-    val result = exec(listOf("git", "rev-parse", "--verify", "-q", "ghss/pushed-to/develop/${ghBranchName}"), repoPath)
+    val result = exec(listOf("git", "rev-parse", "--verify", "-q", "ghpush/pushed-to/develop/${ghBranchName}"), repoPath)
     if (result.exitValue == 0 && result.stdOut.isNotBlank()) {
         return result.stdOut.trim()
     }
@@ -104,13 +104,13 @@ fun getRemoteHashes(ghBranchNames: Collection<String>, repoPath: File): Map<Stri
         }
         val (hash, branchRef) = line.split(" ", limit = 2)
         if (!branchRef.startsWith("refs/remotes/origin/")) {
-            throw GhssException(
+            throw GhpushException(
                 "Unexpected result from '${command.toCommandString()}'; expected all results to start with 'refs/remotes/origin/':\n${showRefOutput}"
             )
         }
         val ghBranchName = branchRef.removePrefix("refs/remotes/origin/")
         if (result.containsKey(ghBranchName)) {
-            throw GhssException(
+            throw GhpushException(
                 "Unexpected result from '${command.toCommandString()}'; found multiple results with branch name ${ghBranchName}:\n${showRefOutput}"
             )
         }

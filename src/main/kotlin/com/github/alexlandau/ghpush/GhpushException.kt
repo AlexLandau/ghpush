@@ -1,6 +1,6 @@
 package com.github.alexlandau.ghpush
 
-class GhssException(
+class GhpushException(
     val messageToUser: String,
     cause: Throwable? = null,
     val additionalInfo: String? = null,

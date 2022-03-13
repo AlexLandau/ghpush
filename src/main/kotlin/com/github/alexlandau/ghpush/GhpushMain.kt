@@ -11,29 +11,29 @@ fun main(args: Array<String>) {
         } else if (options.version) {
             printVersion()
         } else {
-            runGhss(options, File("."))
+            runGhpush(options, File("."))
         }
-    } catch (e: GhssException) {
+    } catch (e: GhpushException) {
         println(e.messageToUser)
         System.exit(1)
     } catch (e: Exception) {
         println()
         e.printStackTrace(System.out)
         println()
-        println("ghss encountered an unhandled error (stacktrace above). Try upgrading if you are not on the latest " +
-                "version. If the problem persists, check https://github.com/AlexLandau/ghss for matching error " +
-                "reports and consider filing an issue if this error has not been reported.")
+        println("ghpush encountered an unhandled error (stacktrace above). Try upgrading if you are not on the " +
+                "latest version. If the problem persists, check https://github.com/AlexLandau/ghpush for matching " +
+                "error reports and consider filing an issue if this error has not been reported.")
         System.exit(1)
     }
 }
 
 fun printHelp() {
-    println("ghss - Tool for syncing stacked git commits to stacked GitHub PRs")
+    println("ghpush - Tool for syncing stacked git commits to stacked GitHub PRs")
     println("TODO: Write useful help -- in most cases just run to push")
 }
 
 fun printVersion() {
-    println("Early alpha version of ghss -- no versioning scheme yet!")
+    println("Early alpha version of ghpush -- no versioning scheme yet!")
 }
 
 // TODO: Check that nothing is staged before starting
@@ -42,7 +42,7 @@ fun printVersion() {
 // TODO: Deal with the issue around commit reordering
 // TODO: Let the user choose whether to push as drafts
 // TODO: Avoid errors around empty commits (including when renaming them)
-fun runGhss(options: Options, repoDir: File) {
+fun runGhpush(options: Options, repoDir: File) {
     println("(1/4) Checking preconditions...")
     // TODO: Specially handle the cases where these aren't installed
     val gitVersion = getCommandOutput(listOf("git", "--version"), repoDir).trim()
@@ -55,7 +55,7 @@ fun runGhss(options: Options, repoDir: File) {
     val isLoggedIntoGh = isLoggedIntoGh(gitRemoteUrl, repoDir)
     println("isLoggedIntoGh: $isLoggedIntoGh")
     if (!isLoggedIntoGh) {
-        throw GhssException("You must be logged into the gh cli to use ghsync. Run: gh auth login --hostname $gitRemoteUrl")
+        throw GhpushException("You must be logged into the gh cli to use ghsync. Run: gh auth login --hostname $gitRemoteUrl")
     }
     warnIfNotDeleteBranchOnMerge(repoDir)
     val gh = RealGh(repoDir)
@@ -130,7 +130,7 @@ fun addBranchNames(diagnosis: Diagnosis, config: Config, repoDir: File) {
                 System.out.flush()
                 val input = readLine()
                 if (input == null) {
-                    throw GhssException(
+                    throw GhpushException(
                         "Error: Looked for an input from the standard input and couldn't get " +
                                 "anything. This may happen if you're piping input from a script and the end of the " +
                                 "file has been reached."
@@ -227,7 +227,7 @@ internal fun autogenerateBranchName(commitTitle: String, prefix: String?, isBran
     val prefixString = prefix?.let { "$it/" } ?: ""
     val initialBranchName = prefixString + sb.toString().take(40).removeSuffix("-")
     if (!isValidGhBranchName(initialBranchName)) {
-        throw GhssException("The branch name auto-generation somehow created a name that looks invalid.\n" +
+        throw GhpushException("The branch name auto-generation somehow created a name that looks invalid.\n" +
                 "    Input (the commit title): $commitTitle\n" +
                 "    Generated branch name: $initialBranchName")
     }
@@ -239,7 +239,7 @@ internal fun autogenerateBranchName(commitTitle: String, prefix: String?, isBran
         val candidateName = "$initialBranchName-$suffixNum"
         if (!isBranchNameTaken(candidateName)) {
             if (!isValidGhBranchName(candidateName)) {
-                throw GhssException("The branch name auto-generation somehow created a name that looks invalid.\n" +
+                throw GhpushException("The branch name auto-generation somehow created a name that looks invalid.\n" +
                         "    Input (the commit title): $commitTitle\n" +
                         "    Generated branch name: $candidateName")
             }
@@ -247,7 +247,7 @@ internal fun autogenerateBranchName(commitTitle: String, prefix: String?, isBran
         }
         suffixNum++
         if (suffixNum >= 100) {
-            throw GhssException("There are too many branch names starting with '$initialBranchName'. " +
+            throw GhpushException("There are too many branch names starting with '$initialBranchName'. " +
                     "Try manually picking a more descriptive branch name here.")
         }
     }
@@ -295,7 +295,7 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
 
     for (commit in diagnosis.commits) {
         // Record what we pushed, so future invocations can tell if the branch changed upstream
-        val trackerBranchName = "ghss/pushed-to/develop/${commit.ghBranchTag}"
+        val trackerBranchName = "ghpush/pushed-to/develop/${commit.ghBranchTag}"
         val startPoint = commit.fullHash
         getCommandOutput(listOf("git", "branch", "--no-track", "-f", trackerBranchName, startPoint), repoDir)
     }
@@ -374,11 +374,11 @@ internal fun getCommitBody(hash: String, repoDir: File): String {
 
 internal fun getGitOrigin(repoPath: File): String {
     val fullUrl = getCommandOutput(listOf("git", "remote", "get-url", "origin"), repoPath)
-    // e.g. git@github.com:AlexLandau/ghss.git
+    // e.g. git@github.com:AlexLandau/ghpush.git
     val atIndex = fullUrl.indexOf('@')
     val colonIndex = fullUrl.indexOf(':', atIndex)
     if (atIndex < 0 || colonIndex < 0 || colonIndex <= atIndex) {
-        throw GhssException("Could not process git remote URL \"${fullUrl}\" (from command 'git remote get-url origin'); was expecting the server between '@' and ':'")
+        throw GhpushException("Could not process git remote URL \"${fullUrl}\" (from command 'git remote get-url origin'); was expecting the server between '@' and ':'")
     }
     return fullUrl.substring(atIndex + 1, colonIndex)
 }

@@ -1,1 +1,1 @@
-rootProject.name = "ghss"
+rootProject.name = "ghpush"

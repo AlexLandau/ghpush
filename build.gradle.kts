@@ -17,7 +17,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.github.alexlandau.ghss.GhssMainKt")
+    mainClass.set("com.github.alexlandau.ghpush.GhpushMainKt")
 }
 
 tasks.test {
