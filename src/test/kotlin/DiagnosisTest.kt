@@ -3,28 +3,21 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 // TODO: Consider a getCommandOutput alternative (should also throw when exit code != 0)
-class DiagnosisTest {
+class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisEmptyBranch() {
-        val gitPaths = createNewGitProject()
-        val gh = MockGh()
-
-        val diagnosis = getDiagnosis(gitPaths.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(Diagnosis(listOf()), diagnosis)
         assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
-
-        gitPaths.deleteTempDirs()
     }
 
     @Test
     fun testDiagnosisSingleCommit() {
-        val gitPath = createNewGitProject()
-        val gh = MockGh()
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file"), localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -41,27 +34,23 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis, fromArgs()))
-
-        gitPath.deleteTempDirs()
     }
 
     @Test
     fun testDiagnosisMultipleNewCommits() {
-        val gitPath = createNewGitProject()
-        val gh = MockGh()
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, Bob.\n")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, Bob.\n")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file"), localRepo)
 
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, Bob.\nHello, Alice!\n")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Edit the file"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, Bob.\nHello, Alice!\n")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Edit the file"), localRepo)
 
-        writeFile(gitPath.localRepo, "bar.txt", "Buffalo buffalo Buffalo buffalo buffalo buffalo Buffalo buffalo.")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add a completely valid sentence"), gitPath.localRepo)
+        writeFile(localRepo, "bar.txt", "Buffalo buffalo Buffalo buffalo buffalo buffalo Buffalo buffalo.")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add a completely valid sentence"), localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -98,19 +87,15 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis, fromArgs()))
-
-        gitPath.deleteTempDirs()
     }
 
     @Test
     fun testDiagnosisNewCommitWithGhBranch() {
-        val gitPath = createNewGitProject()
-        val gh = MockGh()
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -127,22 +112,18 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis, fromArgs()))
-
-        gitPath.deleteTempDirs()
     }
 
     @Test
     fun testDiagnosisExistingUnchangedCommit() {
-        val gitPath = createNewGitProject()
-        val gh = MockGh()
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         // TODO: Version of this with pushAndManagePrs instead
-        getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), gitPath.localRepo)
+        getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -159,25 +140,21 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
-
-        gitPath.deleteTempDirs()
     }
 
     @Test
     fun testDiagnosisFindsPreviouslyPushedHash() {
-        val gitPath = createNewGitProject()
-        val gh = MockGh()
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!!!")
-        getCommandOutput(listOf("git", "commit", "-a", "-m", "Add another file\n\ngh-branch: add-more"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, world!!!")
+        getCommandOutput(listOf("git", "commit", "-a", "-m", "Add another file\n\ngh-branch: add-more"), localRepo)
 
-        val firstDiagnosis = getDiagnosis(gitPath.localRepo, gh)
-        pushAndManagePrs(firstDiagnosis, gitPath.localRepo, gh)
-//        getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), gitPath.localRepo)
+        val firstDiagnosis = getDiagnosis(localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, localRepo, gh)
+//        getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -204,32 +181,28 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
-
-        gitPath.deleteTempDirs()
     }
 
 
     @Test
     fun testBranchModifiedUpstream() {
-        val gitPath = createNewGitProject()
-        val gh = MockGh()
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
-        val firstDiagnosis = getDiagnosis(gitPath.localRepo, gh)
-        pushAndManagePrs(firstDiagnosis, gitPath.localRepo, gh)
+        val firstDiagnosis = getDiagnosis(localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, localRepo, gh)
 
         // Amend the commit upstream
-        getCommandOutput(listOf("git", "checkout", "add-foo"), gitPath.originRepo)
-        writeFile(gitPath.originRepo, "foo.txt", "Hello, moon!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.originRepo)
-        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.originRepo)
+        getCommandOutput(listOf("git", "checkout", "add-foo"), originRepo)
+        writeFile(originRepo, "foo.txt", "Hello, moon!")
+        getCommandOutput(listOf("git", "add", "."), originRepo)
+        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), originRepo)
 
         // TODO: Variant where we also have local changes here
-        getCommandOutput(listOf("git", "fetch"), gitPath.localRepo)
+        getCommandOutput(listOf("git", "fetch"), localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -246,31 +219,27 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.ReconcileCommits, getActionToTake(diagnosis, fromArgs()))
-
-        gitPath.deleteTempDirs()
     }
 
     @Test
     fun testBranchModifiedUpstreamWithForce() {
-        val gitPath = createNewGitProject()
-        val gh = MockGh()
-        writeFile(gitPath.localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.localRepo)
+        writeFile(localRepo, "foo.txt", "Hello, world!")
+        getCommandOutput(listOf("git", "add", "."), localRepo)
+        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
-        val firstDiagnosis = getDiagnosis(gitPath.localRepo, gh)
-        pushAndManagePrs(firstDiagnosis, gitPath.localRepo, gh)
+        val firstDiagnosis = getDiagnosis(localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, localRepo, gh)
 
         // Amend the commit upstream
-        getCommandOutput(listOf("git", "checkout", "add-foo"), gitPath.originRepo)
-        writeFile(gitPath.originRepo, "foo.txt", "Hello, moon!")
-        getCommandOutput(listOf("git", "add", "."), gitPath.originRepo)
-        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), gitPath.originRepo)
+        getCommandOutput(listOf("git", "checkout", "add-foo"), originRepo)
+        writeFile(originRepo, "foo.txt", "Hello, moon!")
+        getCommandOutput(listOf("git", "add", "."), originRepo)
+        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), originRepo)
 
         // TODO: Variant where we also have local changes here
-        getCommandOutput(listOf("git", "fetch"), gitPath.localRepo)
+        getCommandOutput(listOf("git", "fetch"), localRepo)
 
-        val diagnosis = getDiagnosis(gitPath.localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
             Diagnosis(listOf(
                 CommitDiagnosis(
@@ -287,8 +256,6 @@ class DiagnosisTest {
             normalizeHashes(diagnosis)
         )
         assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis, fromArgs("--force")))
-
-        gitPath.deleteTempDirs()
     }
 
     private fun normalizeHashes(diagnosis: Diagnosis): Diagnosis {

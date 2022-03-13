@@ -5,19 +5,19 @@ import org.junit.jupiter.api.Test
 
 class LoadConfigTest: MockRepoTest() {
     private fun addConfig(key: String, value: String) {
-        getCommandOutput(listOf("git", "config", "--add", key, value), project.localRepo)
+        getCommandOutput(listOf("git", "config", "--add", key, value), localRepo)
     }
 
     @Test
     fun testNoConfig() {
-        val config = loadConfig(project.localRepo, mockGh)
+        val config = loadConfig(localRepo, gh)
         assertThat(config.prefix).isNull()
     }
 
     @Test
     fun testNormalPrefix() {
         addConfig("ghpush.prefix", "my-project")
-        val config = loadConfig(project.localRepo, mockGh)
+        val config = loadConfig(localRepo, gh)
         assertThat(config.prefix).isEqualTo("my-project")
     }
 
@@ -25,14 +25,14 @@ class LoadConfigTest: MockRepoTest() {
     fun testEmailPrefix() {
         addConfig("ghpush.prefix", "email")
         addConfig("user.email", "fake@example.com")
-        val config = loadConfig(project.localRepo, mockGh)
+        val config = loadConfig(localRepo, gh)
         assertThat(config.prefix).isEqualTo("fake")
     }
 
     @Test
     fun testUsernamePrefix() {
         addConfig("ghpush.prefix", "username")
-        val config = loadConfig(project.localRepo, mockGh)
+        val config = loadConfig(localRepo, gh)
         assertThat(config.prefix).isEqualTo("TestUser")
     }
 }

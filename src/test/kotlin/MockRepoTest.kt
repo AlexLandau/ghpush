@@ -2,17 +2,20 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 abstract class MockRepoTest {
-    lateinit var project: GitProject
-    lateinit var mockGh: MockGh
+    lateinit var gitRepos: GitProject
+    lateinit var gh: MockGh
+    // Convenience getters
+    val localRepo get() = gitRepos.localRepo
+    val originRepo get() = gitRepos.originRepo
 
     @BeforeEach
     fun setUpProject() {
-        project = createNewGitProject()
-        mockGh = MockGh()
+        gitRepos = createNewGitProject()
+        gh = MockGh()
     }
 
     @AfterEach
     fun tearDownProject() {
-        project.deleteTempDirs()
+        gitRepos.deleteTempDirs()
     }
 }
