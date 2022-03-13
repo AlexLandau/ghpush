@@ -20,7 +20,12 @@ data class Config (
 fun loadConfig(repoDir: File, gh: Gh): Config {
     var prefix: String? = null
 
-    val configLines = getCommandOutput(listOf("git", "config", "--get-regexp", "ghpush\\."), repoDir)
+    val getConfigResult = exec(listOf("git", "config", "--get-regexp", "ghpush\\."), repoDir)
+    val configLines = if (getConfigResult.exitValue != 0) {
+        ""
+    } else {
+        getConfigResult.stdOut
+    }
     for (line in configLines.lines()) {
         if (line.isBlank()) {
             continue
