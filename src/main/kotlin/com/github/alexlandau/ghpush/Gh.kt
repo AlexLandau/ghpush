@@ -1,6 +1,5 @@
 package com.github.alexlandau.ghpush
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 
 /**
@@ -20,18 +19,17 @@ data class CreatePrResult(val prNumber: Int)
 
 class RealGh(private val repoPath: File): Gh {
     override fun findPrNumber(ghBranchName: String): Int? {
-        // TODO: Check that this actually works, then post-filter (?) the output
-        // TODO: Try using the template feature to remove the need to parse JSON
-        val outputJson = getCommandOutput(listOf("gh", "pr", "list", "--json=headRefName,number", "--head", ghBranchName), repoPath).trim()
-        if (outputJson == "[]") {
-            return null
-        }
-        val mapper = ObjectMapper()
-        val arrayNode = mapper.readTree(outputJson)
-        for (node in arrayNode) {
-            // TODO: Reconcile the correct behavior I'm seeing now with the behavior I remember seeing before
-            if (node["headRefName"].asText() == ghBranchName) {
-                return node["number"].asInt()
+        val outputLines = getCommandOutput(listOf("gh", "pr", "list", "--json=headRefName,number",
+            "--jq=.[] | (.number | tostring) + \" \" + .headRefName",
+            "--head", ghBranchName), repoPath).trim()
+        // TODO: Reconcile the correct behavior I'm seeing now with the behavior I remember seeing before
+        for (line in outputLines.lines()) {
+            if (line.isBlank()) {
+                continue
+            }
+            val (number, headRefName) = line.split(" ", limit = 2)
+            if (headRefName == ghBranchName) {
+                return number.toInt()
             }
         }
         return null
