@@ -76,6 +76,13 @@ internal fun getCommandOutput(command: List<String>, dir: File): String {
     return result.stdOut
 }
 
+/**
+ * Runs the given command and throws an exception if its exit code is non-zero.
+ */
+internal fun run(command: List<String>, dir: File) {
+    getCommandOutput(command, dir)
+}
+
 internal fun List<String>.toCommandString(): String {
     return this.map { if (it.contains(" ")) "\"$it\"" else it }.joinToString(" ")
 }

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 
 class LoadConfigTest: MockRepoTest() {
     private fun addConfig(key: String, value: String) {
-        getCommandOutput(listOf("git", "config", "--add", key, value), localRepo)
+        run(listOf("git", "config", "--add", key, value), localRepo)
     }
 
     @Test

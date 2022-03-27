@@ -3,7 +3,6 @@ package com.github.alexlandau.ghpush
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-// TODO: Consider a getCommandOutput alternative (should also throw when exit code != 0)
 class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisEmptyBranch() {
@@ -15,8 +14,8 @@ class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisSingleCommit() {
         writeFile(localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add one file"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
@@ -40,16 +39,16 @@ class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisMultipleNewCommits() {
         writeFile(localRepo, "foo.txt", "Hello, Bob.\n")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add one file"), localRepo)
 
         writeFile(localRepo, "foo.txt", "Hello, Bob.\nHello, Alice!\n")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Edit the file"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Edit the file"), localRepo)
 
         writeFile(localRepo, "bar.txt", "Buffalo buffalo Buffalo buffalo buffalo buffalo Buffalo buffalo.")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add a completely valid sentence"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add a completely valid sentence"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
@@ -93,8 +92,8 @@ class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisNewCommitWithGhBranch() {
         writeFile(localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
@@ -118,11 +117,11 @@ class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisExistingUnchangedCommit() {
         writeFile(localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         // TODO: Version of this with pushAndManagePrs instead
-        getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
+        run(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
@@ -146,14 +145,14 @@ class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisFindsPreviouslyPushedHash() {
         writeFile(localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
         writeFile(localRepo, "foo.txt", "Hello, world!!!")
-        getCommandOutput(listOf("git", "commit", "-a", "-m", "Add another file\n\ngh-branch: add-more"), localRepo)
+        run(listOf("git", "commit", "-a", "-m", "Add another file\n\ngh-branch: add-more"), localRepo)
 
         val firstDiagnosis = getDiagnosis(localRepo, gh)
         pushAndManagePrs(firstDiagnosis, localRepo, gh)
-//        getCommandOutput(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
+//        run(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
@@ -188,20 +187,20 @@ class DiagnosisTest: MockRepoTest() {
     @Test
     fun testBranchModifiedUpstream() {
         writeFile(localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         val firstDiagnosis = getDiagnosis(localRepo, gh)
         pushAndManagePrs(firstDiagnosis, localRepo, gh)
 
         // Amend the commit upstream
-        getCommandOutput(listOf("git", "checkout", "add-foo"), originRepo)
+        run(listOf("git", "checkout", "add-foo"), originRepo)
         writeFile(originRepo, "foo.txt", "Hello, moon!")
-        getCommandOutput(listOf("git", "add", "."), originRepo)
-        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), originRepo)
+        run(listOf("git", "add", "."), originRepo)
+        run(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), originRepo)
 
         // TODO: Variant where we also have local changes here
-        getCommandOutput(listOf("git", "fetch"), localRepo)
+        run(listOf("git", "fetch"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(
@@ -225,20 +224,20 @@ class DiagnosisTest: MockRepoTest() {
     @Test
     fun testBranchModifiedUpstreamWithForce() {
         writeFile(localRepo, "foo.txt", "Hello, world!")
-        getCommandOutput(listOf("git", "add", "."), localRepo)
-        getCommandOutput(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
+        run(listOf("git", "add", "."), localRepo)
+        run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         val firstDiagnosis = getDiagnosis(localRepo, gh)
         pushAndManagePrs(firstDiagnosis, localRepo, gh)
 
         // Amend the commit upstream
-        getCommandOutput(listOf("git", "checkout", "add-foo"), originRepo)
+        run(listOf("git", "checkout", "add-foo"), originRepo)
         writeFile(originRepo, "foo.txt", "Hello, moon!")
-        getCommandOutput(listOf("git", "add", "."), originRepo)
-        getCommandOutput(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), originRepo)
+        run(listOf("git", "add", "."), originRepo)
+        run(listOf("git", "commit", "--amend", "-m", "Add one file\n\ngh-branch: add-foo"), originRepo)
 
         // TODO: Variant where we also have local changes here
-        getCommandOutput(listOf("git", "fetch"), localRepo)
+        run(listOf("git", "fetch"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
         assertEquals(

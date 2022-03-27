@@ -62,7 +62,7 @@ fun runGhpush(options: Options, repoDir: File) {
     val config = loadConfig(repoDir, gh)
 
     println("(2/4) Fetching from origin...")
-    getCommandOutput(listOf("git", "fetch", "origin"), repoDir)
+    run(listOf("git", "fetch", "origin"), repoDir)
 
     println("(3/4) Checking the state of the local branch...")
     val diagnosis = getDiagnosis(repoDir, gh)
@@ -172,9 +172,9 @@ fun addBranchNames(diagnosis: Diagnosis, config: Config, repoDir: File) {
     // Find the first commit on this list, check out <that commit>~1
     val fullHashesToRewrite = diagnosis.commits.map { it.fullHash }
         .dropWhile { !branchNamesToAdd.containsKey(it) }
-    getCommandOutput(listOf("git", "checkout", "${fullHashesToRewrite[0]}~1"), repoDir)
+    run(listOf("git", "checkout", "${fullHashesToRewrite[0]}~1"), repoDir)
     for (hashToRewrite in fullHashesToRewrite) {
-        getCommandOutput(listOf("git", "cherry-pick", hashToRewrite), repoDir)
+        run(listOf("git", "cherry-pick", hashToRewrite), repoDir)
         if (branchNamesToAdd.containsKey(hashToRewrite)) {
             println("Should rewrite the hash here...")
             // TODO: Maybe check command-line size limits here?
@@ -182,12 +182,12 @@ fun addBranchNames(diagnosis: Diagnosis, config: Config, repoDir: File) {
             // %B?
             val commitMessage = getCommandOutput(listOf("git", "log", "-n", "1", "--format=format:%B"), repoDir)
             val editedMessage = "${commitMessage.trim()}\n\ngh-branch: ${branchNamesToAdd[hashToRewrite]!!}"
-            getCommandOutput(listOf("git", "commit", "--amend", "-m", editedMessage), repoDir)
+            run(listOf("git", "commit", "--amend", "-m", editedMessage), repoDir)
         }
     }
     // Move the original branch name over to the new commit sequence
     if (originalBranch.isNotEmpty()) {
-        getCommandOutput(listOf("git", "checkout", "-B", originalBranch), repoDir)
+        run(listOf("git", "checkout", "-B", originalBranch), repoDir)
     }
 }
 
@@ -291,13 +291,13 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
         // TODO: Switch to using --force-with-lease
         pushCommand.add("+${commit.fullHash}:refs/heads/${commit.ghBranchTag}")
     }
-    getCommandOutput(pushCommand, repoDir)
+    run(pushCommand, repoDir)
 
     for (commit in diagnosis.commits) {
         // Record what we pushed, so future invocations can tell if the branch changed upstream
         val trackerBranchName = "ghpush/pushed-to/develop/${commit.ghBranchTag}"
         val startPoint = commit.fullHash
-        getCommandOutput(listOf("git", "branch", "--no-track", "-f", trackerBranchName, startPoint), repoDir)
+        run(listOf("git", "branch", "--no-track", "-f", trackerBranchName, startPoint), repoDir)
     }
 
     var lastCommitBranch = "develop" // TODO: Make configurable
