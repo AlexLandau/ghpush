@@ -4,40 +4,45 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+
+internal val execThreadPool = Executors.newCachedThreadPool { runnable ->
+    val thread = Thread(runnable)
+    thread.setDaemon(true)
+    thread
+}
 
 internal fun exec(command: List<String>, dir: File): ExecResult {
     val process = ProcessBuilder(command)
         .directory(dir)
         .start()
 
-    val cdLatch = CountDownLatch(2)
+    val outputCollectedLatch = CountDownLatch(2)
 
     val outSink = ByteArrayOutputStream()
-    val outCopier = Thread {
+    execThreadPool.submit {
         while (true) {
             process.inputStream.copyTo(outSink)
             if (!process.isAlive) {
-                cdLatch.countDown()
+                outputCollectedLatch.countDown()
                 break
             }
         }
     }
-    outCopier.start()
     val errSink = ByteArrayOutputStream()
-    val errCopier = Thread {
+    execThreadPool.submit {
         while (true) {
             process.errorStream.copyTo(errSink)
             if (!process.isAlive) {
-                cdLatch.countDown()
+                outputCollectedLatch.countDown()
                 break
             }
         }
     }
-    errCopier.start()
 
     process.waitFor()
 
-    cdLatch.await()
+    outputCollectedLatch.await()
 
     return ExecResult(
         exitValue = process.exitValue(),
