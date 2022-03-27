@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.5.31"
     `java-library`
@@ -19,6 +21,7 @@ application {
     mainClass.set("com.github.alexlandau.ghpush.GhpushMainKt")
 }
 
-tasks.test {
+tasks.test.configure {
     useJUnitPlatform()
+    testLogging.exceptionFormat = TestExceptionFormat.FULL
 }
