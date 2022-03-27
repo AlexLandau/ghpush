@@ -1,14 +1,14 @@
 package com.github.alexlandau.ghpush
 
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisEmptyBranch() {
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(Diagnosis(listOf()), diagnosis)
-        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
+        assertThat(diagnosis).isEqualTo(Diagnosis(listOf()))
+        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.NothingToPush)
     }
 
     @Test
@@ -18,7 +18,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "commit", "-m", "Add one file"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(
+        assertThat(normalizeHashes(diagnosis)).isEqualTo(
             Diagnosis(listOf(
                 CommitDiagnosis(
                     fullHash = "1",
@@ -30,10 +30,9 @@ class DiagnosisTest: MockRepoTest() {
                     prNumber = null,
                     prStatus = null
                 )
-            )),
-            normalizeHashes(diagnosis)
+            ))
         )
-        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis, fromArgs()))
+        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.AddBranchNames)
     }
 
     @Test
@@ -51,7 +50,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "commit", "-m", "Add a completely valid sentence"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(
+        assertThat(normalizeHashes(diagnosis)).isEqualTo(
             Diagnosis(listOf(
                 CommitDiagnosis(
                     fullHash = "1",
@@ -83,10 +82,9 @@ class DiagnosisTest: MockRepoTest() {
                     prNumber = null,
                     prStatus = null,
                 ),
-            )),
-            normalizeHashes(diagnosis)
+            ))
         )
-        assertEquals(ActionPlan.AddBranchNames, getActionToTake(diagnosis, fromArgs()))
+        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.AddBranchNames)
     }
 
     @Test
@@ -96,7 +94,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(
+        assertThat(normalizeHashes(diagnosis)).isEqualTo(
             Diagnosis(listOf(
                 CommitDiagnosis(
                     fullHash = "1",
@@ -108,10 +106,9 @@ class DiagnosisTest: MockRepoTest() {
                     prNumber = null,
                     prStatus = null
                 )
-            )),
-            normalizeHashes(diagnosis)
+            ))
         )
-        assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis, fromArgs()))
+        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.ReadyToPush)
     }
 
     @Test
@@ -124,7 +121,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(
+        assertThat(normalizeHashes(diagnosis)).isEqualTo(
             Diagnosis(listOf(
                 CommitDiagnosis(
                     fullHash = "1",
@@ -136,10 +133,9 @@ class DiagnosisTest: MockRepoTest() {
                     prNumber = null,
                     prStatus = null
                 )
-            )),
-            normalizeHashes(diagnosis)
+            ))
         )
-        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
+        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.NothingToPush)
     }
 
     @Test
@@ -155,7 +151,7 @@ class DiagnosisTest: MockRepoTest() {
 //        run(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(
+        assertThat(normalizeHashes(diagnosis)).isEqualTo(
             Diagnosis(listOf(
                 CommitDiagnosis(
                     fullHash = "1",
@@ -177,10 +173,9 @@ class DiagnosisTest: MockRepoTest() {
                     prNumber = 2,
                     prStatus = null
                 )
-            )),
-            normalizeHashes(diagnosis)
+            ))
         )
-        assertEquals(ActionPlan.NothingToPush, getActionToTake(diagnosis, fromArgs()))
+        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.NothingToPush)
     }
 
 
@@ -203,7 +198,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "fetch"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(
+        assertThat(normalizeHashes(diagnosis)).isEqualTo(
             Diagnosis(listOf(
                 CommitDiagnosis(
                     fullHash = "1",
@@ -215,10 +210,9 @@ class DiagnosisTest: MockRepoTest() {
                     prNumber = 1,
                     prStatus = null
                 ),
-            )),
-            normalizeHashes(diagnosis)
+            ))
         )
-        assertEquals(ActionPlan.ReconcileCommits, getActionToTake(diagnosis, fromArgs()))
+        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.ReconcileCommits)
     }
 
     @Test
@@ -240,7 +234,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "fetch"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, gh)
-        assertEquals(
+        assertThat(normalizeHashes(diagnosis)).isEqualTo(
             Diagnosis(listOf(
                 CommitDiagnosis(
                     fullHash = "1",
@@ -252,10 +246,9 @@ class DiagnosisTest: MockRepoTest() {
                     prNumber = 1,
                     prStatus = null
                 ),
-            )),
-            normalizeHashes(diagnosis)
+            ))
         )
-        assertEquals(ActionPlan.ReadyToPush, getActionToTake(diagnosis, fromArgs("--force")))
+        assertThat(getActionToTake(diagnosis, fromArgs("--force"))).isEqualTo(ActionPlan.ReadyToPush)
     }
 
     private fun normalizeHashes(diagnosis: Diagnosis): Diagnosis {
