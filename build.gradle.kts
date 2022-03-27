@@ -17,6 +17,12 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.22.0")
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+}
+
 application {
     mainClass.set("com.github.alexlandau.ghpush.GhpushMainKt")
 }
