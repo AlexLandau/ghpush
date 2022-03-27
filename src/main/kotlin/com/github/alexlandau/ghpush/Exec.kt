@@ -58,16 +58,20 @@ internal data class ExecResult(
 internal fun getCommandOutput(command: List<String>, dir: File): String {
     val result = exec(command, dir)
     if (result.exitValue != 0) {
-        val outputToShow = if (result.stdOut.isEmpty()) {
-            result.stdErr
+        val outputString = if (result.stdOut.isEmpty()) {
+            if (result.stdErr.isEmpty()) {
+                "It had no printed output."
+            } else {
+                "Its error output was: ${result.stdErr}"
+            }
         } else {
             if (result.stdErr.isEmpty()) {
-                result.stdOut
+                "Its output was: ${result.stdOut}"
             } else {
-                "Standard output:\n${result.stdOut}\nStandard error:\n${result.stdErr}"
+                "Its output was:\n${result.stdOut}\nIts error output was:\n${result.stdErr}"
             }
         }
-        throw GhpushException("The command '${command.toCommandString()}' failed. Its output was:\n${outputToShow}")
+        throw GhpushException("The command '${command.toCommandString()}' failed with exit code ${result.exitValue}. $outputString")
     }
     return result.stdOut
 }
