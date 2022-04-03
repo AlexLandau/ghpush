@@ -48,7 +48,11 @@ See also the `ghpush.prefix` config option.
 
 ### Command-line arguments
 
-TODO: Fill in here
+| Argument | Effect |
+| -------- | ------ |
+| `-h` or `--help` | Display a help message. |
+| `-v` or `--version` | Display the current version of `ghpush`. |
+| `-f` or `--force` | Push your changes even if the branches have been updated upstream since you last pushed. |
 
 ### Configuration options
 
@@ -78,6 +82,9 @@ To use `ghpush`, you must have both `git` and `gh` (the GitHub command line tool
 TODO: Fill in here
 
 ## Opinions and limitations
+
+Currently, ghpush requires you to have one commit per PR. If someone makes an addition to a PR, you will have to squash
+that change into your commit if you want to include it.
 
 TODO: Fill in here
 
