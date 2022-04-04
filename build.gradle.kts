@@ -36,8 +36,12 @@ tasks.test.configure {
 
 val writeVersionTask = tasks.register("writeVersion") {
     doLast {
+        // Debug tag-based versioning
+        println("GITHUB_REF_TYPE: ${System.getenv("GITHUB_REF_TYPE")}")
+        println("GITHUB_REF_NAME: ${System.getenv("GITHUB_REF_NAME")}")
+
         // Use calendar versioning unless this is a tagged CI build
-        val version = if (System.getenv("GITHUB_REF_TYPE") == "TAG" && System.getenv("GITHUB_REF_NAME").isNotEmpty()) {
+        val version = if (System.getenv("GITHUB_REF_TYPE") == "tag" && System.getenv("GITHUB_REF_NAME").isNotEmpty()) {
             "ghpush version ${System.getenv("GITHUB_REF_NAME")}"
         } else {
             val formatter = DateTimeFormatter.ofPattern("uu.MM.dd.HH.mm.ss")
