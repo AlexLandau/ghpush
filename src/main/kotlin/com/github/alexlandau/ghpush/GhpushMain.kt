@@ -199,9 +199,7 @@ fun addBranchNames(diagnosis: Diagnosis, config: Config, repoDir: File) {
         }
     }
 
-    println("Branch names to add are: $branchNamesToAdd")
     val originalBranch = getCommandOutput(listOf("git", "branch", "--show-current"), repoDir).trim()
-    println("Current branch is: $originalBranch")
     println("Rewriting the branch to add gh-branch to commit messages...")
     // Find the first commit on this list, check out <that commit>~1
     val fullHashesToRewrite = diagnosis.commits.map { it.fullHash }
@@ -210,7 +208,6 @@ fun addBranchNames(diagnosis: Diagnosis, config: Config, repoDir: File) {
     for (hashToRewrite in fullHashesToRewrite) {
         run(listOf("git", "cherry-pick", hashToRewrite), repoDir)
         if (branchNamesToAdd.containsKey(hashToRewrite)) {
-            println("Should rewrite the hash here...")
             // TODO: Maybe check command-line size limits here?
             // If running into limits, can use -F to read from a file or standard input
             // %B?
