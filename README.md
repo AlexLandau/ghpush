@@ -28,23 +28,32 @@ configuration work.
 ## How to use
 
 You can make the changes you want on any local branch. Make one commit per PR you want to make. Run `ghpush`, and it
-will guide you through adding `gh-branch:` tags to each commit. Then, it will push your changes to GitHub and create a
+will guide you through adding `gh-branch:` trailers to each commit. Then, it will push your changes to GitHub and create a
 PR for each change.
 
 When you want to modify commits on this branch, the recommended approach is an interactive rebase (`git rebase -i`).
 Modify the commits as desired, and when the rebase is done, rerun `ghpush` to update all the PRs at once.
 
-### On gh-branch tags
+### On `gh-branch:` trailers
 
-These tags are used so that when you modify a commit with `git commit --amend` or `git rebase -i`, `ghpush` will
-recognize the commit and modify the existing PR instead of creating a new one. The value of the tag is the branch name
-that will be used on GitHub. It doesn't have to be a local branch name.
+These commit message trailers are used so that when you modify a commit with `git commit --amend` or `git rebase -i`,
+`ghpush` will recognize the commit and modify the existing PR instead of creating a new one. The value of the trailer is the
+branch name that will be used on GitHub. It doesn't have to be a local branch name.
 
-You can add these to your commit messages manually, but you don't have to. Running `ghpush` on an untagged commit will
+You can add these to your commit messages manually, but you don't have to. Running `ghpush` on an unmarked commit will
 prompt you for a gh-branch value for any commit that lacks one. Typing `a` at this prompt will autogenerate a branch
 name based on the commit title.
 
 See also the `ghpush.prefix` config option.
+
+### On `ghpush/pushed-to/*` branches
+
+`ghpush` automatically creates these local branches, which you can safely ignore. These are used to detect if a branch
+has changed upstream since the last time you pushed to it with `ghpush`. This is to protect you from inadvertently
+deleting someone else's changes. If this happens, `ghpush` will abort, note which commits were modified, and give
+further instructions.
+
+I will add garbage collection for these branches... eventually.
 
 ### Command-line arguments
 
@@ -78,7 +87,8 @@ git config --global --add ghpush.prefix email
 
 ## Installing ghpush
 
-To use `ghpush`, you must have both `git` and `gh` (the GitHub command line tool) installed.
+To use `ghpush`, you must have both `git` and `gh` (the GitHub command line tool) installed. It also (currently)
+requires a Java Runtime Environment, and JAVA_HOME to be set accordingly.
 
 TODO: Set up a Homebrew tap for this
 
@@ -97,8 +107,9 @@ On Windows (if not using WSL), use `./gradlew.bat install` and `./build/install/
 
 ## Opinions and limitations
 
-Currently, ghpush requires you to have one commit per PR. If someone makes an addition to a PR, you will have to squash
-that change into your commit if you want to include it in a subsequent push.
+Currently, ghpush requires you to have one commit per PR. If someone else makes an addition to a PR, you will have to
+squash that change into your commit if you want to include it in a subsequent push. Note that this can result in losing
+authorship information.
 
 TODO: Fill in here
 
