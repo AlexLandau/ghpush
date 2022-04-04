@@ -13,8 +13,22 @@ jobs:
         if: always()
         with:
           report_paths: 'build/test-results/test/TEST-*.xml'
+  build-and-test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build --continue
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
+        if: always()
+        with:
+          report_paths: 'build/test-results/test/TEST-*.xml'
   publish-linux:
-    needs: build-and-test-linux
+    needs:
+      - build-and-test-linux
+      - build-and-test-macos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -33,3 +47,25 @@ jobs:
           prerelease: true
           name: ghpush ${{ github.ref_name }}
           files: build/distributions/*
+  publish-macos:
+    needs:
+      - build-and-test-linux
+      - build-and-test-macos
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/gradle-build-action@v2
+        with:
+          arguments: assemble
+      - run: mv build/graal/ghpush build/distributions/ghpush-macos
+      - uses: actions/upload-artifact@v3
+        with:
+          name: distributions
+          path: build/distributions/ghpush-macos
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ github.ref_type == 'tag' }}
+        with:
+          prerelease: true
+          name: ghpush ${{ github.ref_name }}
+          files: build/distributions/ghpush-macos
