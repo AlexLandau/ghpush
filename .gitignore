@@ -6,3 +6,4 @@ build
 
 /.idea/
 /tests-tmp/
+/src/main/resources/com/github/alexlandau/ghpush/version

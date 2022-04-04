@@ -42,7 +42,12 @@ fun printHelp() {
 }
 
 fun printVersion() {
-    println("Early alpha version of ghpush -- no versioning scheme yet!")
+    val version = Options::class.java.getResourceAsStream("/com/github/alexlandau/ghpush/version")?.readAllBytes()?.decodeToString()
+    if (version != null) {
+        println(version)
+    } else {
+        println("Internal error -- version could not be determined")
+    }
 }
 
 // TODO: Check that nothing is staged before starting
