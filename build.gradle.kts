@@ -1,3 +1,5 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
@@ -30,4 +32,20 @@ application {
 tasks.test.configure {
     useJUnitPlatform()
     testLogging.exceptionFormat = TestExceptionFormat.FULL
+}
+
+val writeVersionTask = tasks.register("writeVersion") {
+    doLast {
+        // Use calendar versioning unless this is a tagged CI build
+        val formatter = DateTimeFormatter.ofPattern("uu.MM.dd.HH.mm.ss")
+        val version = "ghpush non-release version ${LocalDateTime.now().format(formatter)}"
+
+        val dir = file("src/main/resources/com/github/alexlandau/ghpush")
+        dir.mkdirs()
+        val file = File(dir, "version")
+        file.writeText(version)
+    }
+}
+tasks.named("processResources").configure {
+    dependsOn(writeVersionTask)
 }
