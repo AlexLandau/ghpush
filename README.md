@@ -73,8 +73,8 @@ use it.
 Quick example:
 
 ```shell
-# Use your email name as your prefix across all repos
-git config --global --add ghpush.prefix email
+# Use your GitHub username as your branch name prefix across all repos
+git config --global --add ghpush.prefix username
 ```
 
 * `ghpush.prefix`: Adds a prefix to `gh-branch` names created using `ghpush`. This can be helpful to, e.g., prefix all
