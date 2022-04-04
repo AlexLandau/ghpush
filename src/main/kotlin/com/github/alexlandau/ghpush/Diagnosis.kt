@@ -63,7 +63,7 @@ fun getDiagnosis(repoPath: File, options: Options, gh: Gh): Diagnosis {
         val ghBranchTag = ghBranchTags[fullHash]
         val remoteHash = ghBranchTag?.let { remoteHashes[it] }
         val previouslyPushedHash = ghBranchTag?.let { findPreviouslyPushedHash(it, targetBranch, repoPath) }
-        val prNumber = ghBranchTag?.let { gh.findPrNumber(ghBranchTag) }
+        val prNumber = ghBranchTag?.let { gh.findOpenPrNumber(ghBranchTag) }
         // TODO: Fill in the nulls here
         CommitDiagnosis(
             fullHash, shortHash, title, ghBranchTag, remoteHash, previouslyPushedHash, prNumber, prStatus = null

@@ -13,6 +13,7 @@ data class Options(
 
 sealed class Action {
     object Push: Action()
+    object Gc: Action()
 }
 
 fun readArgs(args: Array<out String>): Options {
@@ -31,9 +32,11 @@ fun readArgs(args: Array<out String>): Options {
         if (!arg.startsWith("-")) {
             when (action) {
                 Action.Push -> throw GhpushException("Error: Cannot specify multiple commands ('$action' and '$arg')")
+                Action.Gc -> throw GhpushException("Error: Cannot specify multiple commands ('$action' and '$arg')")
                 null -> {
                     when (arg) {
                         "push" -> action = Action.Push
+                        "gc" -> action = Action.Gc
                         else -> throw GhpushException("Error: Unknown command '$arg'")
                     }
                 }
