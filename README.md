@@ -80,7 +80,20 @@ git config --global --add ghpush.prefix email
 
 To use `ghpush`, you must have both `git` and `gh` (the GitHub command line tool) installed.
 
-TODO: Fill in here
+TODO: Set up a Homebrew tap for this
+
+### Manual installation
+
+Download a .tar or .zip with the latest release from the [releases page](https://github.com/AlexLandau/ghpush/releases),
+unzip it to a directory of your choice, and then add the created ghpush/bin directory to your PATH. Verify that it
+worked by running `ghpush --version`.
+
+### Running from source
+
+Clone the repository, run `./gradlew install` to build, and use `./build/install/ghpush/bin/ghpush` as the binary. Don't
+forget to rerun `./gradlew install` after making any code changes.
+
+On Windows (if not using WSL), use `./gradlew.bat install` and `./build/install/ghpush/bin/ghpush.bat` instead.
 
 ## Opinions and limitations
 
