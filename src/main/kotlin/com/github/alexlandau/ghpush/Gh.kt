@@ -10,13 +10,14 @@ import java.io.File
 interface Gh {
     fun findPrNumber(ghBranchName: String): Int?
     fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult
-    fun editPr(prNumber: Int, title: String, body: String, baseBranch: String)
-    fun editPrBody(prNumber: Int, body: String)
+    fun editPr(prNumber: Int, title: String, body: String, baseBranch: String): EditPrResult
+    fun editPrBody(prNumber: Int, body: String): EditPrResult
     fun getUserLogin(): String
     fun getDefaultBranchRef(): String
 }
 
-data class CreatePrResult(val prNumber: Int)
+data class CreatePrResult(val prNumber: Int, val prUrl: String)
+data class EditPrResult(val prUrl: String)
 
 class RealGh(private val repoPath: File): Gh {
     override fun findPrNumber(ghBranchName: String): Int? {
@@ -46,13 +47,12 @@ class RealGh(private val repoPath: File): Gh {
                 "--head", headBranch
             ), repoPath
         )
-        // Output is the URL of the created PR
-        println(prCreateOutput.trim())
-        val prNumber = prCreateOutput.trim().takeLastWhile { it.isDigit() }.toInt()
-        return CreatePrResult(prNumber)
+        val prUrl = prCreateOutput.trim()
+        val prNumber = prUrl.takeLastWhile { it.isDigit() }.toInt()
+        return CreatePrResult(prNumber, prUrl)
     }
 
-    override fun editPr(prNumber: Int, title: String, body: String, baseBranch: String) {
+    override fun editPr(prNumber: Int, title: String, body: String, baseBranch: String): EditPrResult {
         val prEditOutput = getCommandOutput(
             listOf(
                 "gh", "pr", "edit",
@@ -62,10 +62,11 @@ class RealGh(private val repoPath: File): Gh {
                 "--base", baseBranch
             ), repoPath
         )
-        println("prEditOutput: $prEditOutput")
+        val prUrl = prEditOutput.trim()
+        return EditPrResult(prUrl)
     }
 
-    override fun editPrBody(prNumber: Int, body: String) {
+    override fun editPrBody(prNumber: Int, body: String): EditPrResult {
         val prEditOutput = getCommandOutput(
             listOf(
                 "gh", "pr", "edit",
@@ -73,7 +74,8 @@ class RealGh(private val repoPath: File): Gh {
                 "--body", body,
             ), repoPath
         )
-        println("prEditOutput: $prEditOutput")
+        val prUrl = prEditOutput.trim()
+        return EditPrResult(prUrl)
     }
 
     override fun getUserLogin(): String {

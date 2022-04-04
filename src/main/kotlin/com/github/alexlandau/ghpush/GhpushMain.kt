@@ -134,8 +134,8 @@ fun reconcileCommits(diagnosis: Diagnosis, repoDir: File) {
             println("  - ${commit.shortHash} ${commit.title}")
         }
     }
-    println("\nNot pushing to avoid overwriting these changes.")
-    // TODO: Add --force, --pull options
+    println("\nNot pushing to avoid overwriting these changes. Use --force to override this.")
+    // TODO: Add --pull option
 }
 
 fun warnIfNotDeleteBranchOnMerge(repoDir: File) {
@@ -346,6 +346,7 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
             )
             createdPrNumbersByFullHash.put(commit.fullHash, created.prNumber)
             println("Created a PR for ${commit.shortHash} ${commit.title}")
+            println("  ${created.prUrl}")
         } else {
             // Handle existing PRs
             gh.editPr(
@@ -358,6 +359,7 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
         lastCommitBranch = commit.ghBranchTag!!
     }
     if (diagnosis.commits.size >= 2 && createdPrNumbersByFullHash.isNotEmpty()) {
+        println("Rewriting commit tables in PR messages...")
         // Fix the commit bodies
         for (commit in diagnosis.commits) {
             val prNumber = commit.prNumber ?: createdPrNumbersByFullHash[commit.fullHash]
@@ -373,6 +375,7 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
             )
         }
     }
+    println("Finished updating PR chain.")
 }
 
 private fun getTableSuffix(diagnosis: Diagnosis, currentCommitFullHash: String, createdPrNumbersByFullHash: Map<String, Int> = mapOf()): String {

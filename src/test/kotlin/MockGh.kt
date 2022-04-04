@@ -18,19 +18,21 @@ class MockGh: Gh {
         val pr = MockPr(title, body, baseBranch, headBranch)
         val prNumber = prs.size + 1
         prs.put(prNumber, pr)
-        return CreatePrResult(prNumber)
+        return CreatePrResult(prNumber, fakeUrl(prNumber))
     }
 
-    override fun editPr(prNumber: Int, title: String, body: String, baseBranch: String) {
+    override fun editPr(prNumber: Int, title: String, body: String, baseBranch: String): EditPrResult {
         val pr = prs.getValue(prNumber)
         pr.title = title
         pr.body = body
         pr.baseBranch = baseBranch
+        return EditPrResult(fakeUrl(prNumber))
     }
 
-    override fun editPrBody(prNumber: Int, body: String) {
+    override fun editPrBody(prNumber: Int, body: String): EditPrResult {
         val pr = prs.getValue(prNumber)
         pr.body = body
+        return EditPrResult(fakeUrl(prNumber))
     }
 
     override fun getUserLogin(): String {
@@ -39,5 +41,9 @@ class MockGh: Gh {
 
     override fun getDefaultBranchRef(): String {
         return "main"
+    }
+
+    fun fakeUrl(prNumber: Int): String {
+        return "https://github.example.com/OriginMaintainer/test-repo/pull/$prNumber"
     }
 }
