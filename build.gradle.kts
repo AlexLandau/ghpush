@@ -37,8 +37,12 @@ tasks.test.configure {
 val writeVersionTask = tasks.register("writeVersion") {
     doLast {
         // Use calendar versioning unless this is a tagged CI build
-        val formatter = DateTimeFormatter.ofPattern("uu.MM.dd.HH.mm.ss")
-        val version = "ghpush non-release version ${LocalDateTime.now().format(formatter)}"
+        val version = if (System.getenv("GITHUB_REF_TYPE") == "TAG" && System.getenv("GITHUB_REF_NAME").isNotEmpty()) {
+            "ghpush version ${System.getenv("GITHUB_REF_NAME")}"
+        } else {
+            val formatter = DateTimeFormatter.ofPattern("uu.MM.dd.HH.mm.ss")
+            "ghpush non-release version ${LocalDateTime.now().format(formatter)}"
+        }
 
         val dir = file("src/main/resources/com/github/alexlandau/ghpush")
         dir.mkdirs()
