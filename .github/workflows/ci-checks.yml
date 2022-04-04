@@ -13,3 +13,17 @@ jobs:
         if: always()
         with:
           report_paths: 'build/test-results/test/TEST-*.xml'
+  publish-linux:
+    needs: build-and-test-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/gradle-build-action@v2
+        with:
+          arguments: install
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: ${{ github.ref_type == 'tag' }}
+        with:
+          files: |
+            build/distributions/*

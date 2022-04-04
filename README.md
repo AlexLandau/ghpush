@@ -85,7 +85,7 @@ TODO: Fill in here
 ## Opinions and limitations
 
 Currently, ghpush requires you to have one commit per PR. If someone makes an addition to a PR, you will have to squash
-that change into your commit if you want to include it.
+that change into your commit if you want to include it in a subsequent push.
 
 TODO: Fill in here
 
