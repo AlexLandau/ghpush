@@ -13,6 +13,7 @@ jobs:
         if: always()
         with:
           report_paths: 'build/test-results/test/TEST-*.xml'
+          check_name: "JUnit Test Report (Linux)"
   build-and-test-macos:
     runs-on: macos-latest
     steps:
@@ -25,6 +26,7 @@ jobs:
         if: always()
         with:
           report_paths: 'build/test-results/test/TEST-*.xml'
+          check_name: "JUnit Test Report (MacOS)"
   publish-linux:
     needs:
       - build-and-test-linux
