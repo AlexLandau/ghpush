@@ -2,6 +2,7 @@ package com.github.alexlandau.ghpush
 
 import java.io.File
 import java.util.*
+import java.util.regex.Pattern
 
 fun main(args: Array<String>) {
     try {
@@ -39,6 +40,7 @@ fun main(args: Array<String>) {
 fun printHelp() {
     println("ghpush - Tool for syncing stacked git commits to stacked GitHub PRs")
     println("TODO: Write useful help -- in most cases just run to push")
+    println("See the readme at: https://github.com/AlexLandau/ghpush")
 }
 
 fun printVersion() {
@@ -60,14 +62,10 @@ fun runGhpush(options: Options, repoDir: File) {
     println("(1/4) Checking preconditions...")
     // TODO: Specially handle the cases where these aren't installed
     val gitVersion = getCommandOutput(listOf("git", "--version"), repoDir).trim()
-    println("Git version is ${gitVersion}, pretend we checked that")
     // TODO: Figure out a minimum git version and check against that
-    val ghVersion = getCommandOutput(listOf("gh", "--version"), repoDir).trim()
-    println("Gh CLI version is ${ghVersion}, pretend we checked that")
+    checkGhVersion(repoDir)
     val gitRemoteUrl = getGitOrigin(repoDir)
-    println("GitHub hostname is $gitRemoteUrl")
     val isLoggedIntoGh = isLoggedIntoGh(gitRemoteUrl, repoDir)
-    println("isLoggedIntoGh: $isLoggedIntoGh")
     if (!isLoggedIntoGh) {
         throw GhpushException("You must be logged into the gh cli to use ghsync. Run: gh auth login --hostname $gitRemoteUrl")
     }
@@ -104,6 +102,28 @@ fun runGhpush(options: Options, repoDir: File) {
         pushAndManagePrs(diagnosis, repoDir, gh)
     } else if (actionPlan == ActionPlan.ReconcileCommits) {
         reconcileCommits(diagnosis, repoDir)
+    }
+}
+
+// Known version requirements:
+// - Version 2.1.0 adds --head argument to 'gh pr list'
+private fun checkGhVersion(repoDir: File) {
+    val ghVersion = getCommandOutput(listOf("gh", "--version"), repoDir).trim()
+    // Example output:
+    // gh version 2.6.0 (2022-03-15)
+    // https://github.com/cli/cli/releases/tag/v2.6.0
+    val ghVersionFirstLine = ghVersion.split("\n")[0]
+    val ghVersionPattern = Pattern.compile("^gh version ([0-9]+)\\.([0-9]+)\\.([0-9]+).* \\([0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\\)$")
+    val matcher = ghVersionPattern.matcher(ghVersionFirstLine)
+    if (matcher.matches()) {
+        val major = matcher.group(1).toInt()
+        val minor = matcher.group(2).toInt()
+        val patch = matcher.group(3).toInt()
+        if (major < 2 || (major == 2 && minor < 1)) {
+            throw GhpushException("Detected gh version $major.$minor.$patch, but ghpush requires version 2.1.0 or later.")
+        }
+    } else {
+        println("Warning: Failed to parse output of 'gh --version' -- can't check for compatibility.")
     }
 }
 
