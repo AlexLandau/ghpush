@@ -53,7 +53,6 @@ fun printVersion() {
 }
 
 // TODO: Check that nothing is staged before starting
-// TODO: Learn about .git/sequencer, maybe I can use that for something cool?
 // TODO: I think EDITOR="mv rebaseInstructions" will work to set up an interactive rebase
 // TODO: Deal with the issue around commit reordering
 // TODO: Let the user choose whether to push as drafts
@@ -64,6 +63,7 @@ fun runGhpush(options: Options, repoDir: File) {
     val gitVersion = getCommandOutput(listOf("git", "--version"), repoDir).trim()
     // TODO: Figure out a minimum git version and check against that
     checkGhVersion(repoDir)
+    // TODO: Better error message when not in a git repo
     val gitRemoteUrl = getGitOrigin(repoDir)
     val isLoggedIntoGh = isLoggedIntoGh(gitRemoteUrl, repoDir)
     if (!isLoggedIntoGh) {
