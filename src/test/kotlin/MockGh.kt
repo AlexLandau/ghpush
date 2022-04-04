@@ -36,4 +36,8 @@ class MockGh: Gh {
     override fun getUserLogin(): String {
         return "TestUser"
     }
+
+    override fun getDefaultBranchRef(): String {
+        return "main"
+    }
 }

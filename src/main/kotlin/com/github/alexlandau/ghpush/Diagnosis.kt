@@ -5,6 +5,10 @@ import java.io.File
 
 data class Diagnosis(
     /**
+     * The branch that the first PR should target. May be specified using --onto, or may be guessed or configured.
+     */
+    val targetBranch: String,
+    /**
      * The commits on the local branch, ordered from earliest to latest
      */
     val commits: List<CommitDiagnosis>,
@@ -44,16 +48,13 @@ data class CommitDiagnosis(
     val prStatus: String?,
 )
 
-fun getDiagnosis(repoPath: File, gh: Gh): Diagnosis {
-    val commits = getCommitHashesOnBranch(repoPath)
+fun getDiagnosis(repoPath: File, options: Options, gh: Gh): Diagnosis {
+    val targetBranch = getTargetBranch(repoPath, options, gh)
+    val commits = getCommitHashesOnBranch(repoPath, targetBranch)
     val longHashes = commits.map { it.longHash }
 
     val ghBranchTags = getGhBranchesInCommitMessages(longHashes, repoPath)
-//    println("ghBranchTags: ${ghBranchTags}")
-//    println("longHashes: $longHashes")
-//    println("ghBranchTags[fullHash]: ${ghBranchTags[longHashes[0]]}")
     val remoteHashes = getRemoteHashes(ghBranchTags.values, repoPath)
-//    println("remoteHashes: ${remoteHashes}")
 
     val diagnosisCommits = commits.map {
         val fullHash = it.longHash
@@ -61,18 +62,34 @@ fun getDiagnosis(repoPath: File, gh: Gh): Diagnosis {
         val title = it.title
         val ghBranchTag = ghBranchTags[fullHash]
         val remoteHash = ghBranchTag?.let { remoteHashes[it] }
-        val previouslyPushedHash = ghBranchTag?.let { findPreviouslyPushedHash(it, repoPath) }
+        val previouslyPushedHash = ghBranchTag?.let { findPreviouslyPushedHash(it, targetBranch, repoPath) }
         val prNumber = ghBranchTag?.let { gh.findPrNumber(ghBranchTag) }
         // TODO: Fill in the nulls here
         CommitDiagnosis(
             fullHash, shortHash, title, ghBranchTag, remoteHash, previouslyPushedHash, prNumber, prStatus = null
         )
     }
-    return Diagnosis(diagnosisCommits)
+    return Diagnosis(targetBranch, diagnosisCommits)
 }
 
-fun findPreviouslyPushedHash(ghBranchName: String, repoPath: File): String? {
-    val result = exec(listOf("git", "rev-parse", "--verify", "-q", "ghpush/pushed-to/develop/${ghBranchName}"), repoPath)
+fun getTargetBranch(repoPath: File, options: Options, gh: Gh): String {
+    if (options.onto != null) {
+        // Validate that the branch exists upstream
+        val result = exec(listOf("git", "rev-parse", "--verify", "-q", "origin/${options.onto}"), repoPath)
+        if (result.exitValue != 0) {
+            throw GhpushException("Error: The target branch specified by '--onto' was '${options.onto}', but this " +
+                    "branch doesn't exist in the origin repository.")
+        }
+        return options.onto
+    }
+
+    // TODO: Allow repositories to configure the possible values for this branch (e.g. to specify possible release
+    // branches as targets for inference)
+    return gh.getDefaultBranchRef()
+}
+
+fun findPreviouslyPushedHash(ghBranchName: String, targetBranch: String, repoPath: File): String? {
+    val result = exec(listOf("git", "rev-parse", "--verify", "-q", "ghpush/pushed-to/${targetBranch}/${ghBranchName}"), repoPath)
     if (result.exitValue == 0 && result.stdOut.isNotBlank()) {
         return result.stdOut.trim()
     }
@@ -128,8 +145,8 @@ data class CommitBasics (
 /**
  * Returns the hashes of our "local branch", with parent commits earlier in the list
  */
-fun getCommitHashesOnBranch(repoPath: File): List<CommitBasics> {
-    val output = getCommandOutput(listOf("git", "log", "--format=format:%h %H %s", "--reverse", "origin/develop..HEAD"), repoPath)
+fun getCommitHashesOnBranch(repoPath: File, targetBranch: String): List<CommitBasics> {
+    val output = getCommandOutput(listOf("git", "log", "--format=format:%h %H %s", "--reverse", "origin/${targetBranch}..HEAD"), repoPath)
 
     return output.lines().filter { it.isNotBlank() }.map { line ->
         val (shortHash, longHash, title) = line.split(" ", limit = 3)

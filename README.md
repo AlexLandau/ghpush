@@ -48,11 +48,12 @@ See also the `ghpush.prefix` config option.
 
 ### Command-line arguments
 
-| Argument | Effect |
-| -------- | ------ |
-| `-h` or `--help` | Display a help message. |
-| `-v` or `--version` | Display the current version of `ghpush`. |
-| `-f` or `--force` | Push your changes even if the branches have been updated upstream since you last pushed. |
+| Argument                     | Effect                                                                                   |
+|------------------------------|------------------------------------------------------------------------------------------|
+| `-h` or `--help`             | Display a help message.                                                                  |
+| `-v` or `--version`          | Display the current version of `ghpush`.                                                 |
+| `-f` or `--force`            | Push your changes even if the branches have been updated upstream since you last pushed. |
+| `--onto=some-release-branch` | Push your changes onto the named release branch instead of the repo's default branch.    |
 
 ### Configuration options
 

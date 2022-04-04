@@ -28,7 +28,7 @@ fun createNewGitProject(): GitProject {
     Files.createDirectories(testDirsRoot)
     val originDir = Files.createTempDirectory(testDirsRoot, "origin").toFile()
     run(listOf("git", "init"), originDir)
-    run(listOf("git", "checkout", "-b", "develop"), originDir)
+    run(listOf("git", "checkout", "-b", "main"), originDir)
     run(listOf("git", "config", "--add", "user.name", "Origin Maintainer"), originDir)
     run(listOf("git", "config", "--add", "user.email", "origin@example.com"), originDir)
     run(listOf("git", "commit", "--allow-empty", "-m", "Initial commit"), originDir)

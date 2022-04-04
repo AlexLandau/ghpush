@@ -6,20 +6,22 @@ import org.junit.jupiter.api.Test
 class DiagnosisTest: MockRepoTest() {
     @Test
     fun testDiagnosisEmptyBranch() {
-        val diagnosis = getDiagnosis(localRepo, gh)
-        assertThat(diagnosis).isEqualTo(Diagnosis(listOf()))
-        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.NothingToPush)
+        val options = fromArgs()
+        val diagnosis = getDiagnosis(localRepo, options, gh)
+        assertThat(diagnosis).isEqualTo(Diagnosis("main", listOf()))
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.NothingToPush)
     }
 
     @Test
     fun testDiagnosisSingleCommit() {
+        val options = fromArgs()
         writeFile(localRepo, "foo.txt", "Hello, world!")
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add one file"), localRepo)
 
-        val diagnosis = getDiagnosis(localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, options, gh)
         assertThat(normalizeHashes(diagnosis)).isEqualTo(
-            Diagnosis(listOf(
+            Diagnosis("main", listOf(
                 CommitDiagnosis(
                     fullHash = "1",
                     shortHash = "2",
@@ -32,11 +34,12 @@ class DiagnosisTest: MockRepoTest() {
                 )
             ))
         )
-        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.AddBranchNames)
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.AddBranchNames)
     }
 
     @Test
     fun testDiagnosisMultipleNewCommits() {
+        val options = fromArgs()
         writeFile(localRepo, "foo.txt", "Hello, Bob.\n")
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add one file"), localRepo)
@@ -49,9 +52,9 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add a completely valid sentence"), localRepo)
 
-        val diagnosis = getDiagnosis(localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, options, gh)
         assertThat(normalizeHashes(diagnosis)).isEqualTo(
-            Diagnosis(listOf(
+            Diagnosis("main", listOf(
                 CommitDiagnosis(
                     fullHash = "1",
                     shortHash = "2",
@@ -84,18 +87,19 @@ class DiagnosisTest: MockRepoTest() {
                 ),
             ))
         )
-        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.AddBranchNames)
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.AddBranchNames)
     }
 
     @Test
     fun testDiagnosisNewCommitWithGhBranch() {
+        val options = fromArgs()
         writeFile(localRepo, "foo.txt", "Hello, world!")
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
-        val diagnosis = getDiagnosis(localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, options, gh)
         assertThat(normalizeHashes(diagnosis)).isEqualTo(
-            Diagnosis(listOf(
+            Diagnosis("main", listOf(
                 CommitDiagnosis(
                     fullHash = "1",
                     shortHash = "2",
@@ -108,11 +112,12 @@ class DiagnosisTest: MockRepoTest() {
                 )
             ))
         )
-        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.ReadyToPush)
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.ReadyToPush)
     }
 
     @Test
     fun testDiagnosisExistingUnchangedCommit() {
+        val options = fromArgs()
         writeFile(localRepo, "foo.txt", "Hello, world!")
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
@@ -120,9 +125,9 @@ class DiagnosisTest: MockRepoTest() {
         // TODO: Version of this with pushAndManagePrs instead
         run(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
-        val diagnosis = getDiagnosis(localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, options, gh)
         assertThat(normalizeHashes(diagnosis)).isEqualTo(
-            Diagnosis(listOf(
+            Diagnosis("main", listOf(
                 CommitDiagnosis(
                     fullHash = "1",
                     shortHash = "2",
@@ -135,24 +140,25 @@ class DiagnosisTest: MockRepoTest() {
                 )
             ))
         )
-        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.NothingToPush)
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.NothingToPush)
     }
 
     @Test
     fun testDiagnosisFindsPreviouslyPushedHash() {
+        val options = fromArgs()
         writeFile(localRepo, "foo.txt", "Hello, world!")
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
         writeFile(localRepo, "foo.txt", "Hello, world!!!")
         run(listOf("git", "commit", "-a", "-m", "Add another file\n\ngh-branch: add-more"), localRepo)
 
-        val firstDiagnosis = getDiagnosis(localRepo, gh)
+        val firstDiagnosis = getDiagnosis(localRepo, options, gh)
         pushAndManagePrs(firstDiagnosis, localRepo, gh)
 //        run(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
-        val diagnosis = getDiagnosis(localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, options, gh)
         assertThat(normalizeHashes(diagnosis)).isEqualTo(
-            Diagnosis(listOf(
+            Diagnosis("main", listOf(
                 CommitDiagnosis(
                     fullHash = "1",
                     shortHash = "2",
@@ -175,17 +181,18 @@ class DiagnosisTest: MockRepoTest() {
                 )
             ))
         )
-        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.NothingToPush)
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.NothingToPush)
     }
 
 
     @Test
     fun testBranchModifiedUpstream() {
+        val options = fromArgs()
         writeFile(localRepo, "foo.txt", "Hello, world!")
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
-        val firstDiagnosis = getDiagnosis(localRepo, gh)
+        val firstDiagnosis = getDiagnosis(localRepo, options, gh)
         pushAndManagePrs(firstDiagnosis, localRepo, gh)
 
         // Amend the commit upstream
@@ -197,9 +204,9 @@ class DiagnosisTest: MockRepoTest() {
         // TODO: Variant where we also have local changes here
         run(listOf("git", "fetch"), localRepo)
 
-        val diagnosis = getDiagnosis(localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, options, gh)
         assertThat(normalizeHashes(diagnosis)).isEqualTo(
-            Diagnosis(listOf(
+            Diagnosis("main", listOf(
                 CommitDiagnosis(
                     fullHash = "1",
                     shortHash = "2",
@@ -212,16 +219,17 @@ class DiagnosisTest: MockRepoTest() {
                 ),
             ))
         )
-        assertThat(getActionToTake(diagnosis, fromArgs())).isEqualTo(ActionPlan.ReconcileCommits)
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.ReconcileCommits)
     }
 
     @Test
     fun testBranchModifiedUpstreamWithForce() {
+        val options = fromArgs("--force")
         writeFile(localRepo, "foo.txt", "Hello, world!")
         run(listOf("git", "add", "."), localRepo)
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
-        val firstDiagnosis = getDiagnosis(localRepo, gh)
+        val firstDiagnosis = getDiagnosis(localRepo, options, gh)
         pushAndManagePrs(firstDiagnosis, localRepo, gh)
 
         // Amend the commit upstream
@@ -233,9 +241,9 @@ class DiagnosisTest: MockRepoTest() {
         // TODO: Variant where we also have local changes here
         run(listOf("git", "fetch"), localRepo)
 
-        val diagnosis = getDiagnosis(localRepo, gh)
+        val diagnosis = getDiagnosis(localRepo, options, gh)
         assertThat(normalizeHashes(diagnosis)).isEqualTo(
-            Diagnosis(listOf(
+            Diagnosis("main", listOf(
                 CommitDiagnosis(
                     fullHash = "1",
                     shortHash = "2",
@@ -248,12 +256,12 @@ class DiagnosisTest: MockRepoTest() {
                 ),
             ))
         )
-        assertThat(getActionToTake(diagnosis, fromArgs("--force"))).isEqualTo(ActionPlan.ReadyToPush)
+        assertThat(getActionToTake(diagnosis, options)).isEqualTo(ActionPlan.ReadyToPush)
     }
 
     private fun normalizeHashes(diagnosis: Diagnosis): Diagnosis {
         val hashesMap = HashMap<String, String>()
-        return Diagnosis(diagnosis.commits.map { normalizeHashes(it, hashesMap) })
+        return Diagnosis(diagnosis.targetBranch, diagnosis.commits.map { normalizeHashes(it, hashesMap) })
     }
 
     private fun normalizeHashes(commit: CommitDiagnosis, hashesMap: MutableMap<String, String>): CommitDiagnosis {

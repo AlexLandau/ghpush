@@ -10,6 +10,15 @@ fun main(args: Array<String>) {
             printHelp()
         } else if (options.version) {
             printVersion()
+        } else if (options.errors.isNotEmpty()) {
+            println("There were errors parsing the command:")
+            for (error in options.errors) {
+                println("  - $error")
+            }
+            System.exit(1)
+        } else if (options.unrecognizedArgs.isNotEmpty()) {
+            println("The following arguments were not recognized: ${options.unrecognizedArgs.joinToString(", ")}.")
+            System.exit(1)
         } else {
             runGhpush(options, File("."))
         }
@@ -65,7 +74,7 @@ fun runGhpush(options: Options, repoDir: File) {
     run(listOf("git", "fetch", "origin"), repoDir)
 
     println("(3/4) Checking the state of the local branch...")
-    val diagnosis = getDiagnosis(repoDir, gh)
+    val diagnosis = getDiagnosis(repoDir, options, gh)
     val actionPlan = getActionToTake(diagnosis, options)
 
     val unused: Unit = when (actionPlan) {
@@ -79,7 +88,7 @@ fun runGhpush(options: Options, repoDir: File) {
     if (actionPlan == ActionPlan.AddBranchNames) {
         addBranchNames(diagnosis, config, repoDir)
         // Proceed to push if appropriate (accounting for modified commit hashes)
-        val followupDiagnosis = getDiagnosis(repoDir, gh)
+        val followupDiagnosis = getDiagnosis(repoDir, options, gh)
         val followupActionPlan = getActionToTake(followupDiagnosis, options)
         if (followupActionPlan == ActionPlan.ReadyToPush) {
             println("(4/4) Pushing to GitHub and updating PRs...")
@@ -295,12 +304,12 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
 
     for (commit in diagnosis.commits) {
         // Record what we pushed, so future invocations can tell if the branch changed upstream
-        val trackerBranchName = "ghpush/pushed-to/develop/${commit.ghBranchTag}"
+        val trackerBranchName = "ghpush/pushed-to/${diagnosis.targetBranch}/${commit.ghBranchTag}"
         val startPoint = commit.fullHash
         run(listOf("git", "branch", "--no-track", "-f", trackerBranchName, startPoint), repoDir)
     }
 
-    var lastCommitBranch = "develop" // TODO: Make configurable
+    var lastCommitBranch = diagnosis.targetBranch // TODO: Make configurable
     val createdPrNumbersByFullHash = HashMap<String, Int>()
     for (commit in diagnosis.commits) {
         val rawBody = getCommitBody(commit.fullHash, repoDir)
