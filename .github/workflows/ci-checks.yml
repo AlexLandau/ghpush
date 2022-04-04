@@ -1,26 +1,26 @@
 name: ci-checks
 on: [push]
 jobs:
-  build-and-test-linux:
+  check-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/gradle-build-action@v2
         with:
-          arguments: build --continue
+          arguments: check --continue
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
         if: always()
         with:
           report_paths: 'build/test-results/test/TEST-*.xml'
           check_name: "JUnit Test Report (Linux)"
-  build-and-test-macos:
+  check-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/gradle-build-action@v2
         with:
-          arguments: build --continue
+          arguments: check --continue
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
         if: always()
@@ -29,8 +29,8 @@ jobs:
           check_name: "JUnit Test Report (MacOS)"
   publish-linux:
     needs:
-      - build-and-test-linux
-      - build-and-test-macos
+      - check-linux
+      - check-macos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -51,8 +51,8 @@ jobs:
           files: build/distributions/*
   publish-macos:
     needs:
-      - build-and-test-linux
-      - build-and-test-macos
+      - check-linux
+      - check-macos
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
