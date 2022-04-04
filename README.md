@@ -92,7 +92,14 @@ requires a Java Runtime Environment, and JAVA_HOME to be set accordingly.
 
 TODO: Set up a Homebrew tap for this
 
-### Manual installation
+### Manual installation (GraalVM-based binary)
+
+MacOS/Linux: From the [releases page](https://github.com/AlexLandau/ghpush/releases), download the `ghpush-linux` or
+`ghpush-macos` binary as appropriate, move it to the filename `/usr/local/bin/ghpush` (may require `sudo`), and run
+`chmod 544 /usr/local/bin/ghpush`. This location should automatically be found on your PATH. Verify that it worked by
+running `ghpush --version`.
+
+### Manual installation (JVM-based)
 
 Download a .tar or .zip with the latest release from the [releases page](https://github.com/AlexLandau/ghpush/releases),
 unzip it to a directory of your choice, and then add the created ghpush/bin directory to your PATH. Verify that it
