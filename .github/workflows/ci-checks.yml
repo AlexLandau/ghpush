@@ -9,8 +9,8 @@ jobs:
         with:
           arguments: check --continue
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
         if: always()
+        uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
         with:
           report_paths: 'build/test-results/test/TEST-*.xml'
           check_name: "JUnit Test Report (Linux)"
@@ -22,8 +22,8 @@ jobs:
         with:
           arguments: check --continue
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
         if: always()
+        uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
         with:
           report_paths: 'build/test-results/test/TEST-*.xml'
           check_name: "JUnit Test Report (MacOS)"
@@ -43,12 +43,19 @@ jobs:
           name: distributions
           path: build/distributions/
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
         if: ${{ github.ref_type == 'tag' }}
+        uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           name: ghpush ${{ github.ref_name }}
           files: build/distributions/*
+      - name: Open PR in Homebrew tap (AlexLandau/homebrew-ghpush)
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
+        run: |
+          brew tap AlexLandau/ghpush
+          brew bump-formula-pr -f --version=${{ github.ref_name }} --no-browse --no-audit AlexLandau/ghpush/ghpush
   publish-macos:
     needs:
       - check-linux
@@ -65,8 +72,8 @@ jobs:
           name: distributions
           path: build/distributions/ghpush-macos
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
         if: ${{ github.ref_type == 'tag' }}
+        uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           name: ghpush ${{ github.ref_name }}
