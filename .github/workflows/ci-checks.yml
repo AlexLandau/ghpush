@@ -62,7 +62,7 @@ jobs:
           NEW_URL="https://github.com/AlexLandau/ghpush/archive/${{ github.ref_name }}.tar.gz"
           NEW_SHA="$(curl -L "$NEW_URL" | shasum -a 256 -b | cut -f 1 -d " ")"
           # gh auth login
-          git clone https://github.com/AlexLandau/homebrew-ghpush.git
+          git clone https://AlexLandau@github.com/AlexLandau/homebrew-ghpush.git
           cd homebrew-ghpush
           git checkout -B version-${{ github.ref_name }} origin/main
           ./update_url_and_sha.sh "$NEW_URL" "$NEW_SHA"
