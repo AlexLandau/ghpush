@@ -54,6 +54,8 @@ jobs:
         env:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.BREW_TOKEN }}
         run: |
+          git config --global user.email "alandau@cs.stanford.edu"
+          git config --global user.name "Alex Landau (ghpush automation)"
           brew tap AlexLandau/ghpush
           brew bump-formula-pr -f --version=${{ github.ref_name }} --no-browse --no-audit AlexLandau/ghpush/ghpush
   publish-macos:
