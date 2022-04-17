@@ -10,7 +10,7 @@ class MockGh: Gh {
         val headBranch: String
     )
 
-    override fun findPrNumber(ghBranchName: String): Int? {
+    override fun findOpenPrNumber(ghBranchName: String): Int? {
         return prs.entries.find { it.value.headBranch == ghBranchName }?.key
     }
 

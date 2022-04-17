@@ -5,6 +5,7 @@ import java.util.*
 import java.util.regex.Pattern
 
 fun main(args: Array<String>) {
+    val repoDir = File(".")
     try {
         val options: Options = readArgs(args)
         if (options.help) {
@@ -20,8 +21,10 @@ fun main(args: Array<String>) {
         } else if (options.unrecognizedArgs.isNotEmpty()) {
             println("The following arguments were not recognized: ${options.unrecognizedArgs.joinToString(", ")}.")
             System.exit(1)
+        } else if (options.action == Action.Gc) {
+            collectGarbage(repoDir, RealGh(repoDir))
         } else {
-            runGhpush(options, File("."))
+            runGhpush(options, repoDir)
         }
     } catch (e: GhpushException) {
         println(e.messageToUser)

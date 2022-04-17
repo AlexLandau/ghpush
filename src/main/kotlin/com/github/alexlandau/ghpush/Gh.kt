@@ -8,7 +8,8 @@ import java.io.File
  * See MockGh for the mocked implementation.
  */
 interface Gh {
-    fun findPrNumber(ghBranchName: String): Int?
+    // Note: This only returns open PRs
+    fun findOpenPrNumber(ghBranchName: String): Int?
     fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult
     fun editPr(prNumber: Int, title: String, body: String, baseBranch: String): EditPrResult
     fun editPrBody(prNumber: Int, body: String): EditPrResult
@@ -20,7 +21,7 @@ data class CreatePrResult(val prNumber: Int, val prUrl: String)
 data class EditPrResult(val prUrl: String)
 
 class RealGh(private val repoPath: File): Gh {
-    override fun findPrNumber(ghBranchName: String): Int? {
+    override fun findOpenPrNumber(ghBranchName: String): Int? {
         val outputLines = getCommandOutput(listOf("gh", "pr", "list", "--json=headRefName,number",
             "--jq=.[] | (.number | tostring) + \" \" + .headRefName",
             "--head", ghBranchName), repoPath).trim()

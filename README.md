@@ -1,6 +1,6 @@
 # ghpush
 
-A command-line tool for pushing commits to GitHub as stacks of dependent pull requests. Currently in alpha state:
+A command-line tool for pushing commits to GitHub as stacks of dependent pull requests. Currently in beta state:
 useful, but incomplete.
 
 ## Why stack pull requests (PRs)?
@@ -48,12 +48,13 @@ See also the `ghpush.prefix` config option.
 
 ### On `ghpush/pushed-to/*` branches
 
-`ghpush` automatically creates these local branches, which you can safely ignore. These are used to detect if a branch
-has changed upstream since the last time you pushed to it with `ghpush`. This is to protect you from inadvertently
-deleting someone else's changes. If this happens, `ghpush` will abort, note which commits were modified, and give
-further instructions.
+`ghpush` automatically creates these local branches, which you should not check out or modify. These are used to detect
+if a branch has changed upstream since the last time you pushed to it with `ghpush`. This is to protect you from
+inadvertently deleting someone else's changes to your PRs. If this happens, `ghpush` will abort, note which commits were
+modified, and give further instructions.
 
-I will add garbage collection for these branches... eventually.
+These branches can be deleted once their associated PR is merged or closed. You can clean up these old branches by
+running `ghpush gc`.
 
 ### Command-line arguments
 
@@ -63,6 +64,13 @@ I will add garbage collection for these branches... eventually.
 | `-v` or `--version`          | Display the current version of `ghpush`.                                                 |
 | `-f` or `--force`            | Push your changes even if the branches have been updated upstream since you last pushed. |
 | `--onto=some-release-branch` | Push your changes onto the named release branch instead of the repo's default branch.    |
+
+The push command is implied when no command is given. Explicit command options are:
+
+| Command       | Effect                                                                            |
+|---------------|-----------------------------------------------------------------------------------|
+| `ghpush push` | The default behavior.                                                             |
+| `ghpush gc`   | Clean up old `ghpush/pushed-to` branches for which the PRs have merged or closed. |
 
 ### Configuration options
 
@@ -87,16 +95,21 @@ git config --global --add ghpush.prefix username
 
 ## Installing ghpush
 
-To use `ghpush`, you must have both `git` and `gh` (the GitHub command line tool) installed. It also (currently)
-requires a Java Runtime Environment, and JAVA_HOME to be set accordingly.
+To use `ghpush`, you must have both `git` and `gh` (the GitHub command line tool) installed. If you install via
+Homebrew, that should install `gh` automatically.
 
-TODO: Set up a Homebrew tap for this
+### Installing via Homebrew (MacOS and Linux)
+
+```shell
+brew tap AlexLandau/ghpush
+brew install ghpush
+```
 
 ### Manual installation (GraalVM-based binary)
 
 MacOS/Linux: From the [releases page](https://github.com/AlexLandau/ghpush/releases), download the `ghpush-linux` or
 `ghpush-macos` binary as appropriate, move it to the filename `/usr/local/bin/ghpush` (may require `sudo`), and run
-`chmod 544 /usr/local/bin/ghpush`. This location should automatically be found on your PATH. Verify that it worked by
+`chmod 755 /usr/local/bin/ghpush`. This location should automatically be found on your PATH. Verify that it worked by
 running `ghpush --version`.
 
 ### Manual installation (JVM-based)
