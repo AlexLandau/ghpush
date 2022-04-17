@@ -1,6 +1,7 @@
 package com.github.alexlandau.ghpush
 
 data class Options(
+    val action: Action,
     val force: Boolean,
     val help: Boolean,
     val onto: String?,
@@ -10,7 +11,12 @@ data class Options(
     val errors: List<String>,
 )
 
+sealed class Action {
+    object Push: Action()
+}
+
 fun readArgs(args: Array<out String>): Options {
+    var action: Action? = null // null implies Push
     var force = false
     var help = false
     var onto: String? = null
@@ -22,7 +28,17 @@ fun readArgs(args: Array<out String>): Options {
     val itr = args.iterator()
     while (itr.hasNext()) {
         val arg = itr.next()
-        if (arg == "-f" || arg == "--force") {
+        if (!arg.startsWith("-")) {
+            when (action) {
+                Action.Push -> throw GhpushException("Error: Cannot specify multiple commands ('$action' and '$arg')")
+                null -> {
+                    when (arg) {
+                        "push" -> action = Action.Push
+                        else -> throw GhpushException("Error: Unknown command '$arg'")
+                    }
+                }
+            }
+        } else if (arg == "-f" || arg == "--force") {
             force = true
         } else if (arg == "-h" || arg == "--help") {
             help = true
@@ -42,6 +58,7 @@ fun readArgs(args: Array<out String>): Options {
     }
 
     return Options(
+        action = action ?: Action.Push,
         force = force,
         help = help,
         onto = onto,
