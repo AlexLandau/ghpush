@@ -326,7 +326,7 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
 
     for (commit in diagnosis.commits) {
         // Record what we pushed, so future invocations can tell if the branch changed upstream
-        val trackerBranchName = "ghpush/pushed-to/${diagnosis.targetBranch}/${commit.ghBranchTag}"
+        val trackerBranchName = "ghpush/pushed-to/origin/${commit.ghBranchTag}"
         val startPoint = commit.fullHash
         run(listOf("git", "branch", "--no-track", "-f", trackerBranchName, startPoint), repoDir)
     }

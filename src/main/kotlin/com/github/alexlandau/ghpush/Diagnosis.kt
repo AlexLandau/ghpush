@@ -89,7 +89,7 @@ fun getTargetBranch(repoPath: File, options: Options, gh: Gh): String {
 }
 
 fun findPreviouslyPushedHash(ghBranchName: String, targetBranch: String, repoPath: File): String? {
-    val result = exec(listOf("git", "rev-parse", "--verify", "-q", "ghpush/pushed-to/${targetBranch}/${ghBranchName}"), repoPath)
+    val result = exec(listOf("git", "rev-parse", "--verify", "-q", "ghpush/pushed-to/origin/${ghBranchName}"), repoPath)
     if (result.exitValue == 0 && result.stdOut.isNotBlank()) {
         return result.stdOut.trim()
     }

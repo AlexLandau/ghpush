@@ -49,7 +49,7 @@ jobs:
           prerelease: true
           name: ghpush ${{ github.ref_name }}
           files: build/distributions/*
-      - name: Open PR in Homebrew tap (AlexLandau/homebrew-ghpush)
+      - name: Print values needed for PR in Homebrew tap (AlexLandau/homebrew-ghpush)
         if: ${{ github.ref_type == 'tag' }}
         run: |
           NEW_URL="https://github.com/AlexLandau/ghpush/archive/${{ github.ref_name }}.tar.gz"
