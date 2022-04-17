@@ -132,6 +132,9 @@ fun reconcileCommits(diagnosis: Diagnosis, repoDir: File) {
     for (commit in diagnosis.commits) {
         if (commit.remoteHash != null && commit.remoteHash != commit.previouslyPushedHash) {
             println("  - ${commit.shortHash} ${commit.title}")
+            println("    Was previously pushed as: ${commit.previouslyPushedHash ?: "(unknown)"}")
+            println("    but now the upstream is:  ${commit.remoteHash}")
+            // TODO: Make a repro where this would be helpful, and come up with some use of git range-diff output
         }
     }
     println("\nNot pushing to avoid overwriting these changes. Use --force to override this.")
