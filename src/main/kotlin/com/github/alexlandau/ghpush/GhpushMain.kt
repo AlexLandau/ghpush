@@ -58,7 +58,6 @@ fun printVersion() {
 // TODO: Check that nothing is staged before starting
 // TODO: I think EDITOR="mv rebaseInstructions" will work to set up an interactive rebase
 // TODO: Deal with the issue around commit reordering
-// TODO: Let the user choose whether to push as drafts
 // TODO: Avoid errors around empty commits (including when renaming them)
 fun runGhpush(options: Options, repoDir: File) {
     println("(1/4) Checking preconditions...")
@@ -98,11 +97,11 @@ fun runGhpush(options: Options, repoDir: File) {
         val followupActionPlan = getActionToTake(followupDiagnosis, options)
         if (followupActionPlan == ActionPlan.ReadyToPush) {
             println("(4/4) Pushing to GitHub and updating PRs...")
-            pushAndManagePrs(followupDiagnosis, repoDir, gh)
+            pushAndManagePrs(followupDiagnosis, repoDir, config.draft || options.draft, gh)
         }
     } else if (actionPlan == ActionPlan.ReadyToPush) {
         println("(4/4) Pushing to GitHub and updating PRs...")
-        pushAndManagePrs(diagnosis, repoDir, gh)
+        pushAndManagePrs(diagnosis, repoDir, options.draft, gh)
     } else if (actionPlan == ActionPlan.ReconcileCommits) {
         reconcileCommits(diagnosis, repoDir)
     }
@@ -319,7 +318,7 @@ private fun isValidGhBranchChar(char: Int): Boolean {
             || char == '.'.code
 }
 
-fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
+fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, draft: Boolean, gh: Gh) {
     val pushCommand = ArrayList<String>()
     pushCommand.add("git")
     pushCommand.add("push")
@@ -348,7 +347,8 @@ fun pushAndManagePrs(diagnosis: Diagnosis, repoDir: File, gh: Gh) {
                 title = commit.title,
                 body = body,
                 baseBranch = lastCommitBranch,
-                headBranch = commit.ghBranchTag!!
+                headBranch = commit.ghBranchTag!!,
+                draft = draft,
             )
             createdPrNumbersByFullHash.put(commit.fullHash, created.prNumber)
             println("Created a PR for ${commit.shortHash} ${commit.title}")

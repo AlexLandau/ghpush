@@ -14,7 +14,7 @@ class MockGh: Gh {
         return prs.entries.find { it.value.headBranch == ghBranchName }?.key
     }
 
-    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult {
+    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String, draft: Boolean): CreatePrResult {
         val pr = MockPr(title, body, baseBranch, headBranch)
         val prNumber = prs.size + 1
         prs.put(prNumber, pr)

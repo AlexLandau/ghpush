@@ -153,7 +153,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "commit", "-a", "-m", "Add another file\n\ngh-branch: add-more"), localRepo)
 
         val firstDiagnosis = getDiagnosis(localRepo, options, gh)
-        pushAndManagePrs(firstDiagnosis, localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, localRepo, draft = false, gh)
 //        run(listOf("git", "push", "origin", "HEAD:add-foo"), localRepo)
 
         val diagnosis = getDiagnosis(localRepo, options, gh)
@@ -193,7 +193,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         val firstDiagnosis = getDiagnosis(localRepo, options, gh)
-        pushAndManagePrs(firstDiagnosis, localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, localRepo, draft = false, gh)
 
         // Amend the commit upstream
         run(listOf("git", "checkout", "add-foo"), originRepo)
@@ -230,7 +230,7 @@ class DiagnosisTest: MockRepoTest() {
         run(listOf("git", "commit", "-m", "Add one file\n\ngh-branch: add-foo"), localRepo)
 
         val firstDiagnosis = getDiagnosis(localRepo, options, gh)
-        pushAndManagePrs(firstDiagnosis, localRepo, gh)
+        pushAndManagePrs(firstDiagnosis, localRepo, draft = false, gh)
 
         // Amend the commit upstream
         run(listOf("git", "checkout", "add-foo"), originRepo)

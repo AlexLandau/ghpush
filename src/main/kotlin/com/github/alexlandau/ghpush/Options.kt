@@ -2,6 +2,7 @@ package com.github.alexlandau.ghpush
 
 data class Options(
     val action: Action,
+    val draft: Boolean,
     val force: Boolean,
     val help: Boolean,
     val onto: String?,
@@ -19,6 +20,7 @@ sealed class Action {
 fun readArgs(args: Array<out String>): Options {
     var action: Action? = null // null implies Push
     var force = false
+    var draft = false
     var help = false
     var onto: String? = null
     var version = false
@@ -41,6 +43,8 @@ fun readArgs(args: Array<out String>): Options {
                     }
                 }
             }
+        } else if (arg == "--draft") {
+            draft = true
         } else if (arg == "-f" || arg == "--force") {
             force = true
         } else if (arg == "-h" || arg == "--help") {
@@ -62,6 +66,7 @@ fun readArgs(args: Array<out String>): Options {
 
     return Options(
         action = action ?: Action.Push,
+        draft = draft,
         force = force,
         help = help,
         onto = onto,

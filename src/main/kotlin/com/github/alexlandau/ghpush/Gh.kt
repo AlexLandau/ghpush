@@ -10,7 +10,7 @@ import java.io.File
 interface Gh {
     // Note: This only returns open PRs
     fun findOpenPrNumber(ghBranchName: String): Int?
-    fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult
+    fun createPr(title: String, body: String, baseBranch: String, headBranch: String, draft: Boolean): CreatePrResult
     fun editPr(prNumber: Int, title: String, body: String, baseBranch: String): EditPrResult
     fun editPrBody(prNumber: Int, body: String): EditPrResult
     fun getUserLogin(): String
@@ -38,7 +38,7 @@ class RealGh(private val repoPath: File): Gh {
         return null
     }
 
-    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String): CreatePrResult {
+    override fun createPr(title: String, body: String, baseBranch: String, headBranch: String, draft: Boolean): CreatePrResult {
         val prCreateOutput = getCommandOutput(
             listOf(
                 "gh", "pr", "create",
@@ -46,7 +46,7 @@ class RealGh(private val repoPath: File): Gh {
                 "--body", body,
                 "--base", baseBranch,
                 "--head", headBranch
-            ), repoPath
+            ) + (if (draft) listOf("--draft") else listOf()), repoPath
         )
         val prUrl = prCreateOutput.trim()
         val prNumber = prUrl.takeLastWhile { it.isDigit() }.toInt()

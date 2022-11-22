@@ -58,12 +58,13 @@ running `ghpush gc`.
 
 ### Command-line arguments
 
-| Argument                     | Effect                                                                                   |
-|------------------------------|------------------------------------------------------------------------------------------|
-| `-h` or `--help`             | Display a help message.                                                                  |
-| `-v` or `--version`          | Display the current version of `ghpush`.                                                 |
-| `-f` or `--force`            | Push your changes even if the branches have been updated upstream since you last pushed. |
-| `--onto=some-release-branch` | Push your changes onto the named release branch instead of the repo's default branch.    |
+| Argument                      | Effect                                                                                   |
+|-------------------------------|------------------------------------------------------------------------------------------|
+| `-h` or `--help`              | Display a help message.                                                                  |
+| `-v` or `--version`           | Display the current version of `ghpush`.                                                 |
+| `-f` or `--force`             | Push your changes even if the branches have been updated upstream since you last pushed. |
+| `--draft`                     | Push any new PRs as draft PRs. Does not modify existing PRs.                             |
+| `--onto=some-release-branch`  | Push your changes onto the named release branch instead of the repo's default branch.    |
 
 The push command is implied when no command is given. Explicit command options are:
 
@@ -83,8 +84,11 @@ Quick example:
 ```shell
 # Use your GitHub username as your branch name prefix across all repos
 git config --global --add ghpush.prefix username
+# Create all PRs as drafts in the current repo
+git config --add ghpush.draft true
 ```
 
+* `ghpush.draft`: If `true`, all new PRs are created as draft PRs.
 * `ghpush.prefix`: Adds a prefix to `gh-branch` names created using `ghpush`. This can be helpful to, e.g., prefix all
   branches you make with a particular ID to avoid conflicts with other users' branch names. For example, if
   `ghpush.prefix` is `foo`, and you type in `bar` as the branch name, the commit will end up with `gh-branch: foo/bar`.

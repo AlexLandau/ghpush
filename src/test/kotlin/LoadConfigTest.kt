@@ -12,6 +12,7 @@ class LoadConfigTest: MockRepoTest() {
     fun testNoConfig() {
         val config = loadConfig(localRepo, gh)
         assertThat(config.prefix).isNull()
+        assertThat(config.draft).isFalse()
     }
 
     @Test
@@ -34,5 +35,33 @@ class LoadConfigTest: MockRepoTest() {
         addConfig("ghpush.prefix", "username")
         val config = loadConfig(localRepo, gh)
         assertThat(config.prefix).isEqualTo("TestUser")
+    }
+
+    @Test
+    fun testEnableDraftConfig() {
+        addConfig("ghpush.draft", "true")
+        val config = loadConfig(localRepo, gh)
+        assertThat(config.draft).isTrue()
+    }
+
+    @Test
+    fun testEnableDraftConfigUppercase() {
+        addConfig("ghpush.draft", "TRUE")
+        val config = loadConfig(localRepo, gh)
+        assertThat(config.draft).isTrue()
+    }
+
+    @Test
+    fun testIgnoreDraftConfigOtherValues1() {
+        addConfig("ghpush.draft", "false")
+        val config = loadConfig(localRepo, gh)
+        assertThat(config.draft).isFalse()
+    }
+
+    @Test
+    fun testIgnoreDraftConfigOtherValues2() {
+        addConfig("ghpush.draft", "tata")
+        val config = loadConfig(localRepo, gh)
+        assertThat(config.draft).isFalse()
     }
 }

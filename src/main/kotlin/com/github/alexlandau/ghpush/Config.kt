@@ -9,15 +9,20 @@ import java.io.File
  */
 data class Config (
     /**
+     * Whether to push all commits as draft commits by default.
+     */
+    val draft: Boolean,
+    /**
      * The prefix, if any, to put before new branch names automatically.
      *
      * This comes from "ghpush.prefix" in the git config. The special values "email" or "username" will have been
      * translated before use in this variable.
      */
-    val prefix: String?
+    val prefix: String?,
 )
 
 fun loadConfig(repoDir: File, gh: Gh): Config {
+    var draft: Boolean = false
     var prefix: String? = null
 
     val getConfigResult = exec(listOf("git", "config", "--get-regexp", "ghpush\\."), repoDir)
@@ -32,6 +37,7 @@ fun loadConfig(repoDir: File, gh: Gh): Config {
         }
         val (key, value) = line.split(" ", limit = 2)
         when (key) {
+            "ghpush.draft" -> draft = (value.lowercase() == "true")
             "ghpush.prefix" -> prefix = value.trim()
             else -> println("Warning: Key '${key}' in git config is unknown to ghpush. Did you mistype something? Is your version of ghpush up-to-date? Try: 'git help config'")
         }
@@ -41,7 +47,8 @@ fun loadConfig(repoDir: File, gh: Gh): Config {
     prefix = interpretPrefix(prefix, repoDir, gh)
 
     return Config(
-        prefix = prefix
+        draft = draft,
+        prefix = prefix,
     )
 }
 
