@@ -3,10 +3,10 @@ import java.time.format.DateTimeFormatter
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.5.31"
+    id("org.jetbrains.kotlin.jvm") version "1.7.21"
     `java-library`
     application
-    id("com.palantir.graal") version "0.10.0"
+    id("com.palantir.graal") version "0.12.0"
 }
 
 repositories {
@@ -16,8 +16,8 @@ repositories {
 dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
-    testImplementation("org.assertj:assertj-core:3.22.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
+    testImplementation("org.assertj:assertj-core:3.23.1")
 }
 
 java {
@@ -31,7 +31,7 @@ application {
 }
 
 graal {
-    graalVersion("22.0.0.2")
+    graalVersion("22.3.0")
     javaVersion("11")
     mainClass("com.github.alexlandau.ghpush.GhpushMainKt")
     outputName("ghpush")

@@ -21,6 +21,8 @@ jobs:
       - uses: gradle/gradle-build-action@v2
         with:
           arguments: check --continue
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_11_X64 }}
       - name: Publish Test Report
         if: always()
         uses: mikepenz/action-junit-report@47c2b1d0baf4e9cd2e03bdf29325f1e9ec28994a # v3.0.1
@@ -69,6 +71,8 @@ jobs:
       - uses: gradle/gradle-build-action@v2
         with:
           arguments: assemble
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_11_X64 }}
       - run: mv build/graal/ghpush build/distributions/ghpush-macos
       - uses: actions/upload-artifact@v3
         with:
